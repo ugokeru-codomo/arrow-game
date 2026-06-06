@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>スクロール矢印アプリ</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        #app-container {
+            text-align: center;
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            min-width: 280px;
+            overflow: hidden; /* 枠からはみ出た矢印を隠す */
+        }
+
+        /* 矢印が表示される外枠（ステージ） */
+        #stage {
+            height: 150px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            position: relative;
+            width: 100%;
+        }
+
+        /* 矢印本体のスタイル */
+        #display-area {
+            font-size: 120px;
+            font-weight: bold;
+            color: #333;
+            position: absolute;
+            white-space: nowrap;
+        }
+
+        /* カウントダウンの数字用スタイル */
+        .countdown {
+            font-size: 120px;
+            font-weight: bold;
+            color: #ff4757;
+        }
+
+        /* 右から中央へスクロールするアニメーション */
+        .scroll-in {
+            animation: scrollInAnim 0.3s forwards cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        @keyframes scrollInAnim {
+            0% {
+                transform: translateX(200px); /* 右側のはみ出た場所からスタート */
+                opacity: 0;
+            }
+            100% {
+                transform: translateX(0);     /* 真ん中でストップ */
+                opacity: 1;
+            }
+        }
+
+        button {
+            font-size: 18px;
+            padding: 12px 24px;
+            cursor: pointer;
+            background-color: #2ed573;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #26af5f;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+
+<div id="app-container">
+    <div id="stage">
+        <div id="display-area">Ready</div>
+    </div>
+    <button id="start-btn" onclick="startApp()">スタート</button>
+</div>
+
+<script>
+    const displayArea = document.getElementById('display-area');
+    const startBtn = document.getElementById('start-btn');
+    const arrows = ['←', '→'];
+    
+    let intervalId = null;
+
+    function startApp() {
+        startBtn.disabled = true;
+        displayArea.classList.add('countdown');
+        
+        let count = 3;
+        displayArea.textContent = count;
+
+        const countdownInterval = setInterval(() => {
+            count--;
+            if (count > 0) {
+                displayArea.textContent = count;
+            } else {
+                clearInterval(countdownInterval);
+                displayArea.classList.remove('countdown');
+                
+                changeArrow();
+                // 2秒（2000ミリ秒）ごとに切り替え
+                intervalId = setInterval(changeArrow, 2000);
+            }
+        }, 1000);
+    }
+
+    function changeArrow() {
+        // 完全ランダムで矢印を選択
+        const newArrow = arrows[Math.floor(Math.random() * arrows.length)];
+
+        // 一度アニメーションのクラスを消して、文字を書き換える
+        displayArea.classList.remove('scroll-in');
+        displayArea.textContent = newArrow;
+        
+        // ほんのわずかな時間差（リフレッシュ）を入れて、アニメーションを再実行させる
+        void displayArea.offsetWidth; 
+        displayArea.classList.add('scroll-in');
+    }
+</script>
+
+</body>
+</html>
