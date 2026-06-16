@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>スクロール矢印アプリ</title>
+    <title>スクロール矢印アプリ（音・リトライ付）</title>
     <style>
         body {
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -24,11 +24,11 @@
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            min-width: 280px;
-            overflow: hidden; /* 枠からはみ出た矢印を隠す */
+            min-width: 300px;
+            overflow: hidden;
         }
 
-        /* 矢印が表示される外枠（ステージ） */
+        /* 矢印が表示される外枠 */
         #stage {
             height: 150px;
             display: flex;
@@ -62,20 +62,34 @@
 
         @keyframes scrollInAnim {
             0% {
-                transform: translateX(200px); /* 右側のはみ出た場所からスタート */
+                transform: translateX(200px);
                 opacity: 0;
             }
             100% {
-                transform: translateX(0);     /* 真ん中でストップ */
+                transform: translateX(0);
                 opacity: 1;
             }
         }
 
+        /* コントロールパネルのレイアウト */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
         button {
-            font-size: 18px;
-            padding: 12px 24px;
+            font-size: 16px;
+            padding: 12px 20px;
             cursor: pointer;
-            background-color: #2ed573;
             color: white;
             border: none;
             border-radius: 25px;
@@ -83,14 +97,34 @@
             transition: all 0.2s;
         }
 
-        button:hover {
-            background-color: #26af5f;
-        }
+        #start-btn { background-color: #2ed573; }
+        #start-btn:hover { background-color: #26af5f; }
+
+        #stop-btn { background-color: #ff4757; }
+        #stop-btn:hover { background-color: #ff2e44; }
+
+        #retry-btn { background-color: #ffa502; }
+        #retry-btn:hover { background-color: #ff7f50; }
 
         button:disabled {
-            background-color: #cccccc;
+            background-color: #cccccc !important;
             cursor: not-allowed;
             box-shadow: none;
+        }
+
+        /* 速度調整スライダーのスタイル */
+        .speed-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-size: 14px;
+            color: #555;
+            width: 100%;
+        }
+
+        .speed-panel input {
+            cursor: pointer;
+            width: 100%;
         }
     </style>
 </head>
@@ -100,48 +134,132 @@
     <div id="stage">
         <div id="display-area">Ready</div>
     </div>
-    <button id="start-btn" onclick="startApp()">スタート</button>
+    
+    <div class="controls">
+        <div class="btn-group">
+            <button id="start-btn" onclick="startApp()">スタート</button>
+            <button id="stop-btn" onclick="stopApp()" disabled>ストップ</button>
+            <button id="retry-btn" onclick="retryApp()" disabled>最初に戻る</button>
+        </div>
+
+        <div class="speed-panel">
+            <label for="speed-range">切り替え間隔: <span id="speed-val">2.0</span> 秒</label>
+            <input type="range" id="speed-range" min="0.5" max="3.0" step="0.1" value="2.0" oninput="updateSpeed(this.value)">
+        </div>
+    </div>
 </div>
 
 <script>
     const displayArea = document.getElementById('display-area');
     const startBtn = document.getElementById('start-btn');
-    const arrows = ['←', '→'];
+    const stopBtn = document.getElementById('stop-btn');
+    const retryBtn = document.getElementById('retry-btn');
+    const speedVal = document.getElementById('speed-val');
+    const speedRange = document.getElementById('speed-range');
     
+    const arrows = ['←', '→'];
     let intervalId = null;
+    let countdownInterval = null;
+    let currentSpeed = 2000; // ミリ秒（初期値2秒）
+
+    // オーディオ（効果音）を生成する関数
+    let audioCtx = null;
+    function playSound(frequency, duration, type = 'sine') {
+        try {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+            
+            // 音切れ時のプチプチ音を防ぐために少しだけ音量を滑らかに落とす
+            gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + duration);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + duration);
+        } catch (e) {
+            console.log("Audio error:", e);
+        }
+    }
+
+    // スライダーを動かしたときに数値を表示し、動的に速度を反映する
+    function updateSpeed(val) {
+        speedVal.textContent = val;
+        currentSpeed = parseFloat(val) * 1000;
+        
+        if (intervalId !== null) {
+            clearInterval(intervalId);
+            intervalId = setInterval(changeArrow, currentSpeed);
+        }
+    }
 
     function startApp() {
         startBtn.disabled = true;
-        displayArea.classList.add('countdown');
+        stopBtn.disabled = false;
+        retryBtn.disabled = false;
+        speedRange.disabled = true;
         
+        displayArea.classList.add('countdown');
         let count = 3;
         displayArea.textContent = count;
+        playSound(600, 0.1); // 最初の「3」の音
 
-        const countdownInterval = setInterval(() => {
+        countdownInterval = setInterval(() => {
             count--;
             if (count > 0) {
                 displayArea.textContent = count;
+                playSound(600, 0.1); // 「2」「1」の音
             } else {
                 clearInterval(countdownInterval);
                 displayArea.classList.remove('countdown');
+                speedRange.disabled = false;
                 
                 changeArrow();
-                // 2秒（2000ミリ秒）ごとに切り替え
-                intervalId = setInterval(changeArrow, 2000);
+                intervalId = setInterval(changeArrow, currentSpeed);
             }
         }, 1000);
     }
 
-    function changeArrow() {
-        // 完全ランダムで矢印を選択
-        const newArrow = arrows[Math.floor(Math.random() * arrows.length)];
+    function stopApp() {
+        clearInterval(countdownInterval);
+        clearInterval(intervalId);
+        intervalId = null;
 
-        // 一度アニメーションのクラスを消して、文字を書き換える
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        retryBtn.disabled = true;
+        speedRange.disabled = false;
+        displayArea.classList.remove('countdown');
+        displayArea.textContent = 'Ready';
+    }
+
+    // 「最初に戻る」ボタンの処理（一旦ストップして、すぐカウントダウンから再開）
+    function retryApp() {
+        clearInterval(countdownInterval);
+        clearInterval(intervalId);
+        intervalId = null;
+        startApp();
+    }
+
+    function changeArrow() {
+        // カウントダウンから切り替わった直後か、通常の連続切り替えかで音を変える
+        if (displayArea.textContent === '1' || displayArea.classList.contains('countdown')) {
+            playSound(880, 0.3, 'triangle'); // 開始時のちょっと高めの「ピーン」
+        } else {
+            playSound(523.25, 0.05, 'sine'); // 途中の矢印切り替え音（短めのピッ）
+        }
+
+        const newArrow = arrows[Math.floor(Math.random() * arrows.length)];
         displayArea.classList.remove('scroll-in');
-        displayArea.textContent = newArrow;
-        
-        // ほんのわずかな時間差（リフレッシュ）を入れて、アニメーションを再実行させる
         void displayArea.offsetWidth; 
+        displayArea.textContent = newArrow;
         displayArea.classList.add('scroll-in');
     }
 </script>
