@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>反応＆コーディネーションゲーム</title>
+  <style>
+    /* 全体のスタイル設定 */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background-color: #ffffff;
+      transition: background-color 0.05s ease; /* 切り替えを素早く */
+      user-select: none; /* テキスト選択を防止 */
+    }
+
+    /* 操作パネルのスタイル */
+    .control-panel {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      text-align: center;
+      max-width: 90%;
+      width: 300px;
+      z-index: 10;
+    }
+
+    .title {
+      font-size: 1.3rem;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #333;
+    }
+
+    /* ボタンのスタイル */
+    .btn-group {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 15px;
+    }
+
+    button {
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      color: white;
+      transition: opacity 0.2s;
+    }
+
+    button:hover {
+      opacity: 0.8;
+    }
+
+    #startBtn { background-color: #4CAF50; }
+    #stopBtn { background-color: #f44336; }
+    #resetBtn { background-color: #ff9800; }
+
+    /* 設定エリアのスタイル */
+    .setting-item {
+      margin-bottom: 15px;
+      text-align: left;
+    }
+
+    .setting-item label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: #555;
+    }
+
+    /* 色選択チェックボックスの並び */
+    .color-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+
+    .color-options label {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: normal;
+      cursor: pointer;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    /* カウントダウン表示テキストのスタイル */
+    #countdownOverlay {
+      position: absolute;
+      font-size: 4rem;
+      font-weight: bold;
+      color: #333;
+      pointer-events: none; /* タップを妨げない */
+      z-index: 5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- カウントダウンテキスト表示用エリア -->
+  <div id="countdownOverlay"></div>
+
+  <!-- 操作パネル -->
+  <div class="control-panel" id="controlPanel">
+    <div class="title">反応トレーニング</div>
+
+    <!-- 操作ボタン -->
+    <div class="btn-group">
+      <button id="startBtn">スタート</button>
+      <button id="stopBtn">停止</button>
+      <button id="resetBtn">リセット</button>
+    </div>
+
+    <!-- 速度調整スライダー -->
+    <div class="setting-item">
+      <label for="speedRange">切り替え速度: <span id="speedValue">1.5</span> 秒</label>
+      <input type="range" id="speedRange" min="0.5" max="3.0" step="0.1" value="1.5">
+    </div>
+
+    <!-- 色の選択 -->
+    <div class="setting-item">
+      <label>使用する色:</label>
+      <div class="color-options">
+        <label><input type="checkbox" class="color-check" value="red" checked> 赤</label>
+        <label><input type="checkbox" class="color-check" value="blue" checked> 青</label>
+        <label><input type="checkbox" class="color-check" value="yellow" checked> 黄色</label>
+        <label><input type="checkbox" class="color-check" value="green" checked> 緑</label>
+        <label><input type="checkbox" class="color-check" value="purple" checked> 紫</label>
+        <label><input type="checkbox" class="color-check" value="orange" checked> オレンジ</label>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // 変数の準備
+    let timerId = null;
+    let countdownTimer = null;
+    let isRunning = false;
+    let isCountingDown = false;
+    let audioCtx = null;
+
+    // 色のデータ (英語表記 -> カラーコード)
+    const colorMap = {
+      red: '#ff4d4d',
+      blue: '#4d79ff',
+      yellow: '#ffeb3b',
+      green: '#4caf50',
+      purple: '#9c27b0',
+      orange: '#ff9800'
+    };
+
+    // HTML要素の取得
+    const controlPanel = document.getElementById('controlPanel');
+    const countdownOverlay = document.getElementById('countdownOverlay');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const speedRange = document.getElementById('speedRange');
+    const speedValue = document.getElementById('speedValue');
+    const colorChecks = document.querySelectorAll('.color-check');
+
+    // 効果音（電子音）を再生する関数
+    function playBeep(frequency = 800, duration = 0.05) {
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // 音量
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        console.log("Audio play error:", e);
+      }
+    }
+
+    // 速度スライダーの表示更新
+    speedRange.addEventListener('input', () => {
+      speedValue.textContent = speedRange.value;
+      if (isRunning) {
+        startTimer();
+      }
+    });
+
+    // 選択中の色を取得する関数
+    function getSelectedColors() {
+      const selected = [];
+      colorChecks.forEach(check => {
+        if (check.checked) {
+          selected.push(colorMap[check.value]);
+        }
+      });
+      return selected;
+    }
+
+    // 背景色をランダムに変更する関数（一瞬の間と効果音つき）
+    function changeBackgroundColor() {
+      const colors = getSelectedColors();
+      if (colors.length === 0) {
+        alert('色を少なくとも1つ選択してください。');
+        stopGame();
+        return;
+      }
+
+      // 一瞬画面を白にして「間」を作る (80ミリ秒)
+      document.body.style.backgroundColor = '#ffffff';
+
+      setTimeout(() => {
+        if (!isRunning) return;
+        const randomIndex = Math.floor(Math.random() * colors.length);
+        document.body.style.backgroundColor = colors[randomIndex];
+        playBeep(800, 0.06); // 色切り替え音（高いピッ音）
+      }, 80);
+    }
+
+    // ゲーム（色切り替え）を開始する関数
+    function startTimer() {
+      if (timerId) clearInterval(timerId);
+      const intervalMs = parseFloat(speedRange.value) * 1000;
+      
+      changeBackgroundColor();
+      timerId = setInterval(changeBackgroundColor, intervalMs);
+      isRunning = true;
+    }
+
+    // カウントダウン処理を開始する関数
+    function startCountdown() {
+      const colors = getSelectedColors();
+      if (colors.length === 0) {
+        alert('色を少なくとも1つ選択してください。');
+        return;
+      }
+
+      // オーディオコンテキストの初期化（スマホの音設定制限を解除）
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      // 準備状態の設定
+      isCountingDown = true;
+      controlPanel.style.display = 'none'; // 操作パネルを隠す
+      
+      const counts = ['Ready?', '3', '2', '1'];
+      let index = 0;
+
+      countdownOverlay.textContent = counts[index];
+      playBeep(440, 0.1); // Ready音
+
+      countdownTimer = setInterval(() => {
+        index++;
+        if (index < counts.length) {
+          countdownOverlay.textContent = counts[index];
+          playBeep(600, 0.1); // カウントダウン音
+        } else {
+          // カウントダウン終了
+          clearInterval(countdownTimer);
+          countdownOverlay.textContent = '';
+          isCountingDown = false;
+          startTimer(); // 色の切り替えゲーム開始
+        }
+      }, 1000); // 1秒ごとにカウントダウン
+    }
+
+    // ゲーム・カウントダウンを完全停止する関数
+    function stopGame() {
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+      if (timerId) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      
+      countdownOverlay.textContent = '';
+      isRunning = false;
+      isCountingDown = false;
+      controlPanel.style.display = 'block'; // 操作パネルを再表示
+    }
+
+    // ボタンのイベント設定
+    startBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!isRunning && !isCountingDown) {
+        startCountdown();
+      }
+    });
+
+    stopBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      stopGame();
+    });
+
+    resetBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      stopGame();
+      document.body.style.backgroundColor = '#ffffff'; // 背景を白に戻す
+    });
+
+    // 画面全体をタップ（クリック）した時の停止処理
+    document.body.addEventListener('click', (e) => {
+      if ((isRunning || isCountingDown) && !controlPanel.contains(e.target)) {
+        stopGame();
+      }
+    });
+  </script>
+</body>
+</html>
