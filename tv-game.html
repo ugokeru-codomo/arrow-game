@@ -73,7 +73,6 @@
             font-size: 0.85rem;
         }
         
-        /* 濃い青を除外した安全なカラーピッカー設定 */
         .color-item input[type="color"] {
             width: 36px;
             height: 36px;
@@ -231,8 +230,8 @@
             <div class="color-pickers">
                 <div class="color-item"><span>左上</span><input type="color" id="color-tl" value="#00FF00"></div>
                 <div class="color-item"><span>右上</span><input type="color" id="color-tr" value="#FFFF00"></div>
-                <!-- 左下は明るい青(#00A3FF)に固定 -->
-                <div class="color-item"><span>左下</span><input type="color" id="color-bl" value="#00A3FF"></div>
+                <!-- 左下をスカイブルー(#87CEFA)に設定 -->
+                <div class="color-item"><span>左下</span><input type="color" id="color-bl" value="#87CEFA"></div>
                 <div class="color-item"><span>右下</span><input type="color" id="color-br" value="#FF0000"></div>
             </div>
 
@@ -391,13 +390,12 @@
             br: document.getElementById('color-br')
         };
 
-        // 誤って暗い青(#0000FF等)が選択された場合に自動で明るい青(#00A3FF)へ補正する安全処理
+        // 誤って濃い青(#0000FF等)が選択された場合に自動でスカイブルー(#87CEFA)へ補正する安全処理
         Object.values(colorInputs).forEach(input => {
             input.addEventListener('change', (e) => {
                 const val = e.target.value.toUpperCase();
-                // 純粋な濃い青(#0000FFや#0000CCなど)が選ばれたら強制補正
                 if (val === '#0000FF' || val === '#0000CC' || val === '#000099') {
-                    e.target.value = '#00A3FF';
+                    e.target.value = '#87CEFA';
                 }
             });
         });
@@ -611,3 +609,4 @@
         });
     </script>
 </body>
+</html>
