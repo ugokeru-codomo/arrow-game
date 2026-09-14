@@ -3,317 +3,342 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>カラーアクションゲーム Pro (TV対応版)</title>
+    <title>カラーアクション設定</title>
     <style>
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-        }
-        body {
-            font-family: sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
         }
 
-        /* --- 設定・スタート画面 --- */
-        #setup-screen {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #2c3e50;
-            z-index: 10;
+        body {
+            background-color: #1e252b;
+            color: #ffffff;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
+            min-height: 100vh;
             padding: 20px;
         }
 
-        .config-group {
-            background: rgba(0,0,0,0.3);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            width: 90%;
-            max-width: 500px;
+        .container {
+            width: 100%;
+            max-width: 450px;
+            background-color: #273138;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
         }
 
-        .config-title {
-            font-size: 1.1rem;
-            margin-bottom: 10px;
-            border-bottom: 1px solid #555;
-            padding-bottom: 5px;
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #eceff1;
         }
 
-        .color-grid {
+        .card {
+            background-color: #323d45;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 0.95rem;
+            color: #b0bec5;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 4分割色調整グリッド */
+        .color-setting-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 12px;
         }
 
-        .color-item {
+        .color-setting-item {
+            background-color: #273138;
+            padding: 10px 14px;
+            border-radius: 8px;
             display: flex;
-            align-items: center;
             justify-content: space-between;
-        }
-
-        input[type="color"] {
-            width: 50px;
-            height: 40px;
-            border: none;
-            cursor: pointer;
-            background: none;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 15px;
-        }
-
-        .radio-label {
-            display: flex;
             align-items: center;
-            gap: 5px;
-            cursor: pointer;
         }
 
-        #start-btn {
-            font-size: 1.5rem;
-            padding: 10px 40px;
-            background-color: #2ecc71;
+        .color-box-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: 2px solid rgba(255,255,255,0.2);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        .color-box-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* フォーム系要素 */
+        select {
+            width: 100%;
+            padding: 10px;
+            background-color: #273138;
+            color: #fff;
+            border: 1px solid #455a64;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .start-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #2e7d32;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
             cursor: pointer;
             margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(46, 125, 50, 0.4);
+            transition: background-color 0.2s;
         }
 
-        #start-btn:focus, .radio-label input:focus, input[type="color"]:focus {
-            outline: 3px solid #f1c40f;
+        .start-btn:active {
+            background-color: #1b5e20;
         }
 
-        /* --- プレビューエリア --- */
-        #game-screen {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
+        /* 色選択モーダル（ポップアップ） */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100vw;
-        }
-
-        /* 4分割の配置用コンテナ */
-        .grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            flex-grow: 1;
-            width: 100%;
-            height: 100%;
-        }
-
-        .color-area {
-            display: flex;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
             justify-content: center;
             align-items: center;
-            font-size: 4rem;
-            font-weight: bold;
-            color: rgba(255, 255, 255, 0.9);
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            z-index: 100;
         }
 
-        /* 画面ごとの領域指定 */
-        #area-ul { grid-area: 1 / 1 / 2 / 2; }
-        #area-ur { grid-area: 1 / 2 / 2 / 3; }
-        #area-dl { grid-area: 2 / 1 / 3 / 2; }
-        #area-dr { grid-area: 2 / 2 / 3 / 3; }
-
-        /* --- コントローラー（スマホ・PC操作用UI） --- */
-        #controller {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            display: grid;
-            grid-template-columns: repeat(3, 50px);
-            grid-template-rows: repeat(3, 50px);
-            gap: 5px;
-            z-index: 5;
-            opacity: 0.7;
+        .modal-content {
+            background-color: #273138;
+            width: 90%;
+            max-width: 360px;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        .btn {
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid #fff;
-            border-radius: 8px;
-            color: white;
+        .modal-title {
             font-size: 1.2rem;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            user-select: none;
+            margin-bottom: 16px;
+            font-weight: bold;
         }
 
-        #btn-up { grid-area: 1 / 2 / 2 / 3; }
-        #btn-left { grid-area: 2 / 1 / 3 / 2; }
-        #btn-right { grid-area: 2 / 2 / 3 / 3; }
-        #btn-down { grid-area: 3 / 2 / 4 / 3; }
+        .preset-colors {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .color-option {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .color-option.selected {
+            border-color: #ffffff;
+            box-shadow: 0 0 8px rgba(255,255,255,0.8);
+        }
+
+        .custom-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .selected-preview {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid #fff;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .btn-cancel, .btn-set {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: transparent;
+            color: #b0bec5;
+        }
+
+        .btn-set {
+            background: transparent;
+            color: #4fc3f7;
+        }
+
+        /* 隠しHTML5カラーピッカー */
+        #hidden-color-input {
+            opacity: 0;
+            position: absolute;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
 
-    <!-- 設定・スタート画面 -->
-    <div id="setup-screen">
-        <h1 style="margin-bottom: 20px;">カラーアクション Game</h1>
-        
-        <div class="config-group">
-            <div class="config-title">1. 各方向の色を設定</div>
-            <div class="color-grid">
-                <div class="color-item">
-                    <span>左上 (UL):</span>
-                    <input type="color" id="picker-ul" value="#FF0000">
+    <div class="container">
+        <h1>カラーアクション設定</h1>
+
+        <!-- マットの色調整 -->
+        <div class="card">
+            <div class="card-title">🎨 マットの色調整（4分割）</div>
+            <div class="color-setting-grid">
+                <div class="color-setting-item">
+                    <span>左上</span>
+                    <div id="btn-ul" class="color-box-btn" style="background-color: #00e676;" onclick="openColorModal('ul')"></div>
                 </div>
-                <div class="color-item">
-                    <span>右上 (UR):</span>
-                    <input type="color" id="picker-ur" value="#00FF00">
+                <div class="color-setting-item">
+                    <span>右上</span>
+                    <div id="btn-ur" class="color-box-btn" style="background-color: #ffd600;" onclick="openColorModal('ur')"></div>
                 </div>
-                <div class="color-item">
-                    <span>左下 (DL):</span>
-                    <!-- 初期値をスカイブルー(#87CEEB)に変更 -->
-                    <input type="color" id="picker-dl" value="#87CEEB">
+                <div class="color-setting-item">
+                    <span>左下</span>
+                    <!-- デフォルト色をスカイブルー(#00bfff)に更新 -->
+                    <div id="btn-dl" class="color-box-btn" style="background-color: #00bfff;" onclick="openColorModal('dl')"></div>
                 </div>
-                <div class="color-item">
-                    <span>右下 (DR):</span>
-                    <input type="color" id="picker-dr" value="#FFFF00">
+                <div class="color-setting-item">
+                    <span>右下</span>
+                    <div id="btn-dr" class="color-box-btn" style="background-color: #ff1744;" onclick="openColorModal('dr')"></div>
                 </div>
             </div>
         </div>
 
-        <div class="config-group">
-            <div class="config-title">2. スピードを選択</div>
-            <div class="radio-group">
-                <label class="radio-label"><input type="radio" name="speed" value="2000"> おそい</label>
-                <label class="radio-label"><input type="radio" name="speed" value="1000" checked> ふつう</label>
-                <label class="radio-label"><input type="radio" name="speed" value="500"> はやい</label>
+        <!-- 効果音 -->
+        <div class="card">
+            <div class="card-title">🔊 効果音</div>
+            <select id="sound-setting">
+                <option value="on">あり（サウンドON）</option>
+                <option value="off">なし（サウンドOFF）</option>
+            </select>
+        </div>
+
+        <button class="start-btn" onclick="startGame()">スタート</button>
+    </div>
+
+    <!-- 色選択モーダル -->
+    <div id="color-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-title">色の選択</div>
+            
+            <div class="preset-colors">
+                <div class="color-option" style="background-color: #ff1744;" onclick="selectPreset('#ff1744')"></div>
+                <!-- 濃い青からスカイブルー(#00bfff)へ変更 -->
+                <div class="color-option" style="background-color: #00bfff;" onclick="selectPreset('#00bfff')"></div>
+                <div class="color-option" style="background-color: #2979ff;" onclick="selectPreset('#2979ff')"></div>
+                <div class="color-option" style="background-color: #00e676;" onclick="selectPreset('#00e676')"></div>
+                <div class="color-option" style="background-color: #d500f9;" onclick="selectPreset('#d500f9')"></div>
+                <div class="color-option" style="background-color: #ffd600;" onclick="selectPreset('#ffd600')"></div>
+                <div class="color-option" style="background-color: #212121;" onclick="selectPreset('#212121')"></div>
+                <div class="color-option" style="background-color: #ffffff;" onclick="selectPreset('#ffffff')"></div>
+            </div>
+
+            <div class="custom-row">
+                <span style="font-weight: bold;" onclick="triggerCustomPicker()">カスタム</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 0.9rem; color: #b0bec5;">選択した色</span>
+                    <div id="modal-preview" class="selected-preview" style="background-color: #00bfff;"></div>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeColorModal()">キャンセル</button>
+                <button class="btn-set" onclick="applyColorSelection()">設定</button>
             </div>
         </div>
-
-        <button id="start-btn" tabindex="0">スタート！</button>
     </div>
 
-    <!-- ゲーム画面 -->
-    <div id="game-screen">
-        <div class="grid-container">
-            <div id="area-ul" class="color-area">↖</div>
-            <div id="area-ur" class="color-area">↗</div>
-            <div id="area-dl" class="color-area">↙</div>
-            <div id="area-dr" class="color-area">↘</div>
-        </div>
-    </div>
-
-    <!-- オンスクリーン・コントローラー -->
-    <div id="controller">
-        <div id="btn-up" class="btn">▲</div>
-        <div id="btn-left" class="btn">◀</div>
-        <div id="btn-right" class="btn">▶</div>
-        <div id="btn-down" class="btn">▼</div>
-    </div>
+    <input type="color" id="hidden-color-input" onchange="onCustomColorChange(event)">
 
     <script>
-        // 設定値の保持用
-        let colors = {};
-        let gameInterval = null;
-        let currentActiveArea = null;
+        // 色の設定状態（左下の初期値をスカイブルー #00bfff に変更）
+        let currentColors = {
+            ul: '#00e676',
+            ur: '#ffd600',
+            dl: '#00bfff', 
+            dr: '#ff1744'
+        };
 
-        // RGBの色強度を計算して暗すぎるかチェックする関数
-        function isColorTooDark(hexColor) {
-            const hex = hexColor.replace('#', '');
-            const r = parseInt(hex.substring(0, 2), 16);
-            const g = parseInt(hex.substring(2, 4), 16);
-            const b = parseInt(hex.substring(4, 6), 16);
-            // 輝度（明るさ）の計算式
-            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-            return brightness < 50; // 50未満を「暗すぎる」と判定
+        let activeTarget = null;
+        let tempSelectedColor = '#00bfff';
+
+        // モーダルを開く
+        function openColorModal(target) {
+            activeTarget = target;
+            tempSelectedColor = currentColors[target];
+            updatePreview(tempSelectedColor);
+            document.getElementById('color-modal').style.display = 'flex';
         }
 
-        // ゲーム開始処理
-        document.getElementById('start-btn').addEventListener('click', startGame);
+        // モーダルを閉じる
+        function closeColorModal() {
+            document.getElementById('color-modal').style.display = 'none';
+        }
+
+        // プリセット色を選択
+        function selectPreset(color) {
+            tempSelectedColor = color;
+            updatePreview(color);
+        }
+
+        // プレビュー表示の更新
+        function updatePreview(color) {
+            document.getElementById('modal-preview').style.backgroundColor = color;
+        }
+
+        // 決定ボタンを押したときの処理
+        function applyColorSelection() {
+            if (activeTarget) {
+                currentColors[activeTarget] = tempSelectedColor;
+                document.getElementById(`btn-${activeTarget}`).style.backgroundColor = tempSelectedColor;
+            }
+            closeColorModal();
+        }
+
+        // カスタムカラーピッカー起動
+        function triggerCustomPicker() {
+            document.getElementById('hidden-color-input').click();
+        }
+
+        function onCustomColorChange(e) {
+            selectPreset(e.target.value);
+        }
 
         function startGame() {
-            // 色の取得と安全チェック
-            const rawColors = {
-                ul: document.getElementById('picker-ul').value,
-                ur: document.getElementById('picker-ur').value,
-                dl: document.getElementById('picker-dl').value,
-                dr: document.getElementById('picker-dr').value
-            };
-
-            // 暗すぎる色は安全な代替色（スカイブルー等）に補正
-            for (let key in rawColors) {
-                if (isColorTooDark(rawColors[key])) {
-                    colors[key] = '#87CEEB'; // 明るいスカイブルーに自動置換
-                } else {
-                    colors[key] = rawColors[key];
-                }
-            }
-
-            // 初期色の適用
-            document.getElementById('area-ul').style.backgroundColor = colors.ul;
-            document.getElementById('area-ur').style.backgroundColor = colors.ur;
-            document.getElementById('area-dl').style.backgroundColor = colors.dl;
-            document.getElementById('area-dr').style.backgroundColor = colors.dr;
-
-            // 設定画面を隠す
-            document.getElementById('setup-screen').style.display = 'none';
-
-            // スピード取得とタイマー開始
-            const speed = parseInt(document.querySelector('input[name="speed"]:checked').value);
-            
-            if (gameInterval) clearInterval(gameInterval);
-            gameInterval = setInterval(highlightRandomArea, speed);
-        }
-
-        // ランダムにエリアを光らせる処理
-        function highlightRandomArea() {
-            const areas = ['ul', 'ur', 'dl', 'dr'];
-            const randomChoice = areas[Math.floor(Math.random() * areas.length)];
-            
-            // リセット
-            areas.forEach(a => {
-                document.getElementById(`area-${a}`).style.opacity = '0.3';
-            });
-
-            // 選択されたエリアを強調
-            document.getElementById(`area-${randomChoice}`).style.opacity = '1.0';
-            currentActiveArea = randomChoice;
-        }
-
-        // リモコン・キーボード操作対応
-        window.addEventListener('keydown', (e) => {
-            switch(e.key) {
-                case 'ArrowUp':
-                    checkAnswer('ul'); // 仮の割り当て
-                    break;
-                case 'ArrowDown':
-                    checkAnswer('dl');
-                    break;
-                case 'ArrowLeft':
-                    checkAnswer('ul');
-                    break;
-                case 'ArrowRight':
-                    checkAnswer('ur');
-                    break;
-            }
-        });
-
-        function checkAnswer(selectedArea) {
-            if (selectedArea === currentActiveArea) {
-                // 正解の演出など
-            }
+            alert('ゲームを開始します！設定色: ' + JSON.stringify(currentColors));
         }
     </script>
 </body>
