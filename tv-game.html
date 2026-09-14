@@ -78,6 +78,7 @@
             display: flex;
             gap: 6px;
             flex-wrap: wrap;
+            min-height: 28px; /* 表示崩れ防止 */
         }
         .color-btn {
             width: 24px;
@@ -135,7 +136,7 @@
             position: relative;
         }
 
-        /* 操作パネル (画面上部に固定追従) */
+        /* 操作パネル */
         #control-bar {
             position: fixed;
             top: 20px;
@@ -317,306 +318,278 @@
     </div>
 
     <script>
-        // 利用可能な安全なカラーリスト（濃い青を除外、スカイブルーを採用）
-        const SAFE_COLORS = [
-            { name: '緑', value: '#00FF00' },
-            { name: '黄', value: '#FFFF00' },
-            { name: 'スカイブルー', value: '#87CEFA' },
-            { name: '赤', value: '#FF0000' },
-            { name: 'マゼンタ', value: '#FF00FF' },
-            { name: 'オレンジ', value: '#FFA500' }
-        ];
+        // DOMの読み込み完了後に全処理を実行する（エラー防止）
+        document.addEventListener('DOMContentLoaded', () => {
 
-        // 各エリアの選択中の色を保持
-        const selectedColors = {
-            tl: '#00FF00',
-            tr: '#FFFF00',
-            bl: '#87CEFA',
-            br: '#FF0000'
-        };
+            // 利用可能な安全なカラーリスト
+            const SAFE_COLORS = [
+                { name: '緑', value: '#00FF00' },
+                { name: '黄', value: '#FFFF00' },
+                { name: 'スカイブルー', value: '#87CEFA' },
+                { name: '赤', value: '#FF0000' },
+                { name: 'マゼンタ', value: '#FF00FF' },
+                { name: 'オレンジ', value: '#FFA500' }
+            ];
 
-        // パレットUIの初期生成
-        document.querySelectorAll('.color-palette').forEach(palette => {
-            const cellKey = palette.dataset.cell;
-            SAFE_COLORS.forEach(c => {
-                const btn = document.createElement('button');
-                btn.className = 'color-btn';
-                btn.style.backgroundColor = c.value;
-                btn.title = c.name;
-                
-                if (c.value === selectedColors[cellKey]) {
-                    btn.classList.add('selected');
-                }
+            // 各エリアの選択中の色を保持
+            const selectedColors = {
+                tl: '#00FF00',
+                tr: '#FFFF00',
+                bl: '#87CEFA',
+                br: '#FF0000'
+            };
 
-                btn.addEventListener('click', () => {
-                    palette.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    selectedColors[cellKey] = c.value;
+            // パレットUIの初期生成
+            document.querySelectorAll('.color-palette').forEach(palette => {
+                const cellKey = palette.dataset.cell;
+                SAFE_COLORS.forEach(c => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'color-btn';
+                    btn.style.backgroundColor = c.value;
+                    btn.title = c.name;
+                    
+                    if (c.value === selectedColors[cellKey]) {
+                        btn.classList.add('selected');
+                    }
+
+                    btn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        palette.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                        btn.classList.add('selected');
+                        selectedColors[cellKey] = c.value;
+                    });
+
+                    palette.appendChild(btn);
                 });
-
-                palette.appendChild(btn);
-            });
-        });
-
-        // Web Audio API（効果音再生）
-        let audioCtx = null;
-
-        function playSound(type) {
-            const soundSetting = document.getElementById('sound-mode').value;
-            if (soundSetting === 'off') return;
-
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            const now = audioCtx.currentTime;
-
-            if (type === 'count') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.frequency.setValueAtTime(523.25, now);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-
-            } else if (type === 'start') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.frequency.setValueAtTime(1046.50, now);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-
-            } else if (type === 'change') {
-                const osc1 = audioCtx.createOscillator();
-                const osc2 = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-
-                osc1.type = 'sine';
-                osc2.type = 'sine';
-                osc1.connect(gain);
-                osc2.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc1.frequency.setValueAtTime(523.25, now);
-                osc2.frequency.setValueAtTime(659.25, now);
-
-                gain.gain.setValueAtTime(0.35, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-                osc1.start(now);
-                osc2.start(now);
-                osc1.stop(now + 0.12);
-                osc2.stop(now + 0.12);
-            }
-        }
-
-        // DOM要素の取得
-        const setupScreen = document.getElementById('setup-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const startBtn = document.getElementById('start-btn');
-        const pauseBtn = document.getElementById('pause-btn');
-        const homeBtn = document.getElementById('home-btn');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        const controlBar = document.getElementById('control-bar');
-        const countdownOverlay = document.getElementById('countdown-overlay');
-        const speedRange = document.getElementById('speed-range');
-        const speedVal = document.getElementById('speed-val');
-        const markModeSelect = document.getElementById('mark-mode');
-        const levelGroup = document.getElementById('level-group');
-        const levelSelect = document.getElementById('level-select');
-
-        const cells = {
-            tl: document.getElementById('cell-tl'),
-            tr: document.getElementById('cell-tr'),
-            bl: document.getElementById('cell-bl'),
-            br: document.getElementById('cell-br')
-        };
-
-        let timerId = null;
-        let isPaused = false;
-        let intervalTime = 2000;
-
-        // UI連動：手足ミックス選択時のみ難易度設定を表示
-        markModeSelect.addEventListener('change', () => {
-            if (markModeSelect.value === 'mix') {
-                levelGroup.style.display = 'block';
-            } else {
-                levelGroup.style.display = 'none';
-            }
-        });
-
-        // スピード表示更新
-        speedRange.addEventListener('input', (e) => {
-            speedVal.textContent = parseFloat(e.target.value).toFixed(1) + '秒';
-        });
-
-        // Fisher-Yates アルゴリズムによるシャッフル関数
-        function shuffle(array) {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-        // 切り替えアニメーション
-        function triggerChange() {
-            if (isPaused) return;
-
-            Object.values(cells).forEach(cell => {
-                cell.style.backgroundColor = '#000000';
-                cell.innerHTML = '';
             });
 
-            setTimeout(() => {
-                if (!isPaused) {
-                    renderNewPattern();
+            // Web Audio API（効果音再生）
+            let audioCtx = null;
+
+            function playSound(type) {
+                const soundSetting = document.getElementById('sound-mode').value;
+                if (soundSetting === 'off') return;
+
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
-            }, 100);
-        }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
 
-        // 新しいパターンの描画処理
-        function renderNewPattern() {
-            const keys = ['tl', 'tr', 'bl', 'br'];
-            const markMode = markModeSelect.value;
+                const now = audioCtx.currentTime;
 
-            if (markMode === 'none') {
-                const activeCount = Math.random() < 0.5 ? 1 : 2;
-                const selectedKeys = shuffle(keys).slice(0, activeCount);
-                selectedKeys.forEach(key => {
-                    cells[key].style.backgroundColor = selectedColors[key];
-                });
-                playSound('change');
-                return;
+                if (type === 'count') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.frequency.setValueAtTime(523.25, now);
+                    gain.gain.setValueAtTime(0.3, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.start(now);
+                    osc.stop(now + 0.15);
+
+                } else if (type === 'start') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'triangle';
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.frequency.setValueAtTime(1046.50, now);
+                    gain.gain.setValueAtTime(0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+
+                } else if (type === 'change') {
+                    const osc1 = audioCtx.createOscillator();
+                    const osc2 = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+
+                    osc1.type = 'sine';
+                    osc2.type = 'sine';
+                    osc1.connect(gain);
+                    osc2.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc1.frequency.setValueAtTime(523.25, now);
+                    osc2.frequency.setValueAtTime(659.25, now);
+
+                    gain.gain.setValueAtTime(0.35, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+
+                    osc1.start(now);
+                    osc2.start(now);
+                    osc1.stop(now + 0.12);
+                    osc2.stop(now + 0.12);
+                }
             }
 
-            let patternsByCount = {};
+            // DOM要素の取得
+            const setupScreen = document.getElementById('setup-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const startBtn = document.getElementById('start-btn');
+            const pauseBtn = document.getElementById('pause-btn');
+            const homeBtn = document.getElementById('home-btn');
+            const fullscreenBtn = document.getElementById('fullscreen-btn');
+            const controlBar = document.getElementById('control-bar');
+            const countdownOverlay = document.getElementById('countdown-overlay');
+            const speedRange = document.getElementById('speed-range');
+            const speedVal = document.getElementById('speed-val');
+            const markModeSelect = document.getElementById('mark-mode');
+            const levelGroup = document.getElementById('level-group');
+            const levelSelect = document.getElementById('level-select');
 
-            if (markMode === 'hand') {
-                patternsByCount = {
-                    1: [['✋'], ['👐']],
-                    2: [['✋', '✋']]
-                };
-            } 
-            else if (markMode === 'foot') {
-                patternsByCount = {
-                    1: [['🦶'], ['👣']],
-                    2: [['🦶', '🦶']]
-                };
-            } 
-            else if (markMode === 'mix') {
-                const level = parseInt(levelSelect.value, 10);
+            const cells = {
+                tl: document.getElementById('cell-tl'),
+                tr: document.getElementById('cell-tr'),
+                bl: document.getElementById('cell-bl'),
+                br: document.getElementById('cell-br')
+            };
 
-                patternsByCount[1] = [['🦶'], ['👣']];
+            let timerId = null;
+            let isPaused = false;
+            let intervalTime = 2000;
 
-                patternsByCount[2] = [
-                    ['🦶', '🦶'],
-                    ['🦶', '✋'],
-                    ['👣', '✋'],
-                    ['🦶', '👐']
-                ];
-
-                if (level >= 2) {
-                    patternsByCount[3] = [
-                        ['🦶', '🦶', '✋'],
-                        ['🦶', '✋', '✋'],
-                        ['👣', '✋', '✋'],
-                        ['🦶', '🦶', '👐']
-                    ];
-                }
-
-                if (level >= 3) {
-                    patternsByCount[4] = [
-                        ['🦶', '🦶', '✋', '✋']
-                    ];
-                }
-            }
-
-            const availableCounts = Object.keys(patternsByCount);
-            const chosenCount = availableCounts[Math.floor(Math.random() * availableCounts.length)];
-            const patterns = patternsByCount[chosenCount];
-            const chosenPattern = patterns[Math.floor(Math.random() * patterns.length)];
-
-            const selectedKeys = shuffle(keys).slice(0, chosenPattern.length);
-            const shuffledMarks = shuffle(chosenPattern);
-
-            selectedKeys.forEach((key, index) => {
-                cells[key].style.backgroundColor = selectedColors[key];
-                const emoji = shuffledMarks[index];
-                if (emoji) {
-                    cells[key].innerHTML = `<div class="mark-badge">${emoji}</div>`;
-                }
-            });
-
-            playSound('change');
-        }
-
-        // ゲーム開始
-        function startGame() {
-            playSound('count');
-
-            setupScreen.style.display = 'none';
-            countdownOverlay.style.display = 'flex';
-            controlBar.classList.remove('show');
-            
-            isPaused = false;
-            pauseBtn.textContent = '一時停止';
-            pauseBtn.style.backgroundColor = '#f39c12';
-
-            intervalTime = parseFloat(speedRange.value) * 1000;
-
-            let count = 3;
-            countdownOverlay.textContent = count;
-
-            const countdownTimer = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    countdownOverlay.textContent = count;
-                    playSound('count');
+            // UI連動：手足ミックス選択時のみ難易度設定を表示
+            markModeSelect.addEventListener('change', () => {
+                if (markModeSelect.value === 'mix') {
+                    levelGroup.style.display = 'block';
                 } else {
-                    clearInterval(countdownTimer);
-                    countdownOverlay.style.display = 'none';
-                    playSound('start');
-                    renderNewPattern();
-                    timerId = setInterval(triggerChange, intervalTime);
+                    levelGroup.style.display = 'none';
                 }
-            }, 1000);
-        }
+            });
 
-        // 全画面表示の切り替え関数
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`全画面モードエラー: ${err.message}`);
-                });
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
+            // スピード表示更新
+            speedRange.addEventListener('input', (e) => {
+                speedVal.textContent = parseFloat(e.target.value).toFixed(1) + '秒';
+            });
+
+            // Fisher-Yates アルゴリズムによるシャッフル関数
+            function shuffle(array) {
+                const arr = [...array];
+                for (let i = arr.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [arr[i], arr[j]] = [arr[j], arr[i]];
                 }
+                return arr;
             }
-            controlBar.classList.remove('show');
-        }
 
-        // イベントリスナー
-        gameScreen.addEventListener('click', (e) => {
-            if (e.target.closest('#control-bar')) return;
-            controlBar.classList.toggle('show');
-        });
+            // 切り替えアニメーション
+            function triggerChange() {
+                if (isPaused) return;
 
-        function togglePause(e) {
-            e.sto
+                Object.values(cells).forEach(cell => {
+                    cell.style.backgroundColor = '#000000';
+                    cell.innerHTML = '';
+                });
+
+                setTimeout(() => {
+                    if (!isPaused) {
+                        renderNewPattern();
+                    }
+                }, 100);
+            }
+
+            // 新しいパターンの描画処理
+            function renderNewPattern() {
+                const keys = ['tl', 'tr', 'bl', 'br'];
+                const markMode = markModeSelect.value;
+
+                if (markMode === 'none') {
+                    const activeCount = Math.random() < 0.5 ? 1 : 2;
+                    const selectedKeys = shuffle(keys).slice(0, activeCount);
+                    selectedKeys.forEach(key => {
+                        cells[key].style.backgroundColor = selectedColors[key];
+                    });
+                    playSound('change');
+                    return;
+                }
+
+                let patternsByCount = {};
+
+                if (markMode === 'hand') {
+                    patternsByCount = {
+                        1: [['✋'], ['👐']],
+                        2: [['✋', '✋']]
+                    };
+                } 
+                else if (markMode === 'foot') {
+                    patternsByCount = {
+                        1: [['🦶'], ['👣']],
+                        2: [['🦶', '🦶']]
+                    };
+                } 
+                else if (markMode === 'mix') {
+                    const level = parseInt(levelSelect.value, 10);
+
+                    patternsByCount[1] = [['🦶'], ['👣']];
+
+                    patternsByCount[2] = [
+                        ['🦶', '🦶'],
+                        ['🦶', '✋'],
+                        ['👣', '✋'],
+                        ['🦶', '👐']
+                    ];
+
+                    if (level >= 2) {
+                        patternsByCount[3] = [
+                            ['🦶', '🦶', '✋'],
+                            ['🦶', '✋', '✋'],
+                            ['👣', '✋', '✋'],
+                            ['🦶', '🦶', '👐']
+                        ];
+                    }
+
+                    if (level >= 3) {
+                        patternsByCount[4] = [
+                            ['🦶', '🦶', '✋', '✋']
+                        ];
+                    }
+                }
+
+                const availableCounts = Object.keys(patternsByCount);
+                const chosenCount = availableCounts[Math.floor(Math.random() * availableCounts.length)];
+                const patterns = patternsByCount[chosenCount];
+                const chosenPattern = patterns[Math.floor(Math.random() * patterns.length)];
+
+                const selectedKeys = shuffle(keys).slice(0, chosenPattern.length);
+                const shuffledMarks = shuffle(chosenPattern);
+
+                selectedKeys.forEach((key, index) => {
+                    cells[key].style.backgroundColor = selectedColors[key];
+                    const emoji = shuffledMarks[index];
+                    if (emoji) {
+                        cells[key].innerHTML = `<div class="mark-badge">${emoji}</div>`;
+                    }
+                });
+
+                playSound('change');
+            }
+
+            // ゲーム開始
+            function startGame() {
+                playSound('count');
+
+                setupScreen.style.display = 'none';
+                countdownOverlay.style.display = 'flex';
+                controlBar.classList.remove('show');
+                
+                isPaused = false;
+                pauseBtn.textContent = '一時停止';
+                pauseBtn.style.backgroundColor = '#f39c12';
+
+                intervalTime = parseFloat(speedRange.value) * 1000;
+
+                let count = 3;
+                countdownOverlay.textContent = count;
+
+                const countdownTimer = setInterval(() => {
+                    count--;
+                    if (count > 0) {
+                        countdownOverlay.textContent
