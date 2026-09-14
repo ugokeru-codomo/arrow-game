@@ -15,11 +15,19 @@
         body {
             background-color: #1e252b;
             color: #ffffff;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+        }
+
+        /* --- 設定画面 --- */
+        #setup-screen {
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
             padding: 20px;
+            background-color: #1e252b;
         }
 
         .container {
@@ -114,7 +122,40 @@
             background-color: #1b5e20;
         }
 
-        /* 色選択モーダル（ポップアップ） */
+        /* --- ゲーム画面 --- */
+        #game-screen {
+            display: none;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .color-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+            transition: opacity 0.1s;
+        }
+
+        #area-ul { grid-area: 1 / 1 / 2 / 2; }
+        #area-ur { grid-area: 1 / 2 / 2 / 3; }
+        #area-dl { grid-area: 2 / 1 / 3 / 2; }
+        #area-dr { grid-area: 2 / 2 / 3 / 3; }
+
+        /* 色選択モーダル */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -157,11 +198,6 @@
             border: 2px solid transparent;
         }
 
-        .color-option.selected {
-            border-color: #ffffff;
-            box-shadow: 0 0 8px rgba(255,255,255,0.8);
-        }
-
         .custom-row {
             display: flex;
             justify-content: space-between;
@@ -200,7 +236,6 @@
             color: #4fc3f7;
         }
 
-        /* 隠しHTML5カラーピッカー */
         #hidden-color-input {
             opacity: 0;
             position: absolute;
@@ -210,43 +245,53 @@
 </head>
 <body>
 
-    <div class="container">
-        <h1>カラーアクション設定</h1>
+    <!-- 設定画面 -->
+    <div id="setup-screen">
+        <div class="container">
+            <h1>カラーアクション設定</h1>
 
-        <!-- マットの色調整 -->
-        <div class="card">
-            <div class="card-title">🎨 マットの色調整（4分割）</div>
-            <div class="color-setting-grid">
-                <div class="color-setting-item">
-                    <span>左上</span>
-                    <div id="btn-ul" class="color-box-btn" style="background-color: #00e676;" onclick="openColorModal('ul')"></div>
-                </div>
-                <div class="color-setting-item">
-                    <span>右上</span>
-                    <div id="btn-ur" class="color-box-btn" style="background-color: #ffd600;" onclick="openColorModal('ur')"></div>
-                </div>
-                <div class="color-setting-item">
-                    <span>左下</span>
-                    <!-- デフォルト色をスカイブルー(#00bfff)に更新 -->
-                    <div id="btn-dl" class="color-box-btn" style="background-color: #00bfff;" onclick="openColorModal('dl')"></div>
-                </div>
-                <div class="color-setting-item">
-                    <span>右下</span>
-                    <div id="btn-dr" class="color-box-btn" style="background-color: #ff1744;" onclick="openColorModal('dr')"></div>
+            <div class="card">
+                <div class="card-title">🎨 マットの色調整（4分割）</div>
+                <div class="color-setting-grid">
+                    <div class="color-setting-item">
+                        <span>左上</span>
+                        <div id="btn-ul" class="color-box-btn" style="background-color: #00e676;" onclick="openColorModal('ul')"></div>
+                    </div>
+                    <div class="color-setting-item">
+                        <span>右上</span>
+                        <div id="btn-ur" class="color-box-btn" style="background-color: #ffd600;" onclick="openColorModal('ur')"></div>
+                    </div>
+                    <div class="color-setting-item">
+                        <span>左下</span>
+                        <div id="btn-dl" class="color-box-btn" style="background-color: #00bfff;" onclick="openColorModal('dl')"></div>
+                    </div>
+                    <div class="color-setting-item">
+                        <span>右下</span>
+                        <div id="btn-dr" class="color-box-btn" style="background-color: #ff1744;" onclick="openColorModal('dr')"></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
-        <!-- 効果音 -->
-        <div class="card">
-            <div class="card-title">🔊 効果音</div>
-            <select id="sound-setting">
-                <option value="on">あり（サウンドON）</option>
-                <option value="off">なし（サウンドOFF）</option>
-            </select>
-        </div>
+            <div class="card">
+                <div class="card-title">🔊 効果音</div>
+                <select id="sound-setting">
+                    <option value="on">あり（サウンドON）</option>
+                    <option value="off">なし（サウンドOFF）</option>
+                </select>
+            </div>
 
-        <button class="start-btn" onclick="startGame()">スタート</button>
+            <button class="start-btn" onclick="startGame()">スタート</button>
+        </div>
+    </div>
+
+    <!-- 4分割ゲーム画面 -->
+    <div id="game-screen">
+        <div class="grid-container">
+            <div id="area-ul" class="color-area">↖</div>
+            <div id="area-ur" class="color-area">↗</div>
+            <div id="area-dl" class="color-area">↙</div>
+            <div id="area-dr" class="color-area">↘</div>
+        </div>
     </div>
 
     <!-- 色選択モーダル -->
@@ -256,7 +301,6 @@
             
             <div class="preset-colors">
                 <div class="color-option" style="background-color: #ff1744;" onclick="selectPreset('#ff1744')"></div>
-                <!-- 濃い青からスカイブルー(#00bfff)へ変更 -->
                 <div class="color-option" style="background-color: #00bfff;" onclick="selectPreset('#00bfff')"></div>
                 <div class="color-option" style="background-color: #2979ff;" onclick="selectPreset('#2979ff')"></div>
                 <div class="color-option" style="background-color: #00e676;" onclick="selectPreset('#00e676')"></div>
@@ -267,7 +311,7 @@
             </div>
 
             <div class="custom-row">
-                <span style="font-weight: bold;" onclick="triggerCustomPicker()">カスタム</span>
+                <span style="font-weight: bold; cursor: pointer;" onclick="triggerCustomPicker()">カスタム</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 0.9rem; color: #b0bec5;">選択した色</span>
                     <div id="modal-preview" class="selected-preview" style="background-color: #00bfff;"></div>
@@ -284,7 +328,6 @@
     <input type="color" id="hidden-color-input" onchange="onCustomColorChange(event)">
 
     <script>
-        // 色の設定状態（左下の初期値をスカイブルー #00bfff に変更）
         let currentColors = {
             ul: '#00e676',
             ur: '#ffd600',
@@ -294,8 +337,8 @@
 
         let activeTarget = null;
         let tempSelectedColor = '#00bfff';
+        let gameInterval = null;
 
-        // モーダルを開く
         function openColorModal(target) {
             activeTarget = target;
             tempSelectedColor = currentColors[target];
@@ -303,23 +346,19 @@
             document.getElementById('color-modal').style.display = 'flex';
         }
 
-        // モーダルを閉じる
         function closeColorModal() {
             document.getElementById('color-modal').style.display = 'none';
         }
 
-        // プリセット色を選択
         function selectPreset(color) {
             tempSelectedColor = color;
             updatePreview(color);
         }
 
-        // プレビュー表示の更新
         function updatePreview(color) {
             document.getElementById('modal-preview').style.backgroundColor = color;
         }
 
-        // 決定ボタンを押したときの処理
         function applyColorSelection() {
             if (activeTarget) {
                 currentColors[activeTarget] = tempSelectedColor;
@@ -328,7 +367,6 @@
             closeColorModal();
         }
 
-        // カスタムカラーピッカー起動
         function triggerCustomPicker() {
             document.getElementById('hidden-color-input').click();
         }
@@ -337,8 +375,32 @@
             selectPreset(e.target.value);
         }
 
+        // --- 本番のゲーム開始処理 ---
         function startGame() {
-            alert('ゲームを開始します！設定色: ' + JSON.stringify(currentColors));
+            // 1. 各領域に選択した色をセット
+            document.getElementById('area-ul').style.backgroundColor = currentColors.ul;
+            document.getElementById('area-ur').style.backgroundColor = currentColors.ur;
+            document.getElementById('area-dl').style.backgroundColor = currentColors.dl;
+            document.getElementById('area-dr').style.backgroundColor = currentColors.dr;
+
+            // 2. 設定画面を隠して、ゲーム画面を表示
+            document.getElementById('setup-screen').style.display = 'none';
+            document.getElementById('game-screen').style.display = 'flex';
+
+            // 3. ランダム点灯処理を開始（1秒間隔）
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(highlightRandomArea, 1000);
+        }
+
+        function highlightRandomArea() {
+            const areas = ['ul', 'ur', 'dl', 'dr'];
+            const randomChoice = areas[Math.floor(Math.random() * areas.length)];
+            
+            areas.forEach(a => {
+                document.getElementById(`area-${a}`).style.opacity = '0.3';
+            });
+
+            document.getElementById(`area-${randomChoice}`).style.opacity = '1.0';
         }
     </script>
 </body>
