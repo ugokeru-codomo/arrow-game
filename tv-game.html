@@ -46,7 +46,7 @@
             padding: 12px 15px;
             border-radius: 12px;
             width: 100%;
-            max-width: 360px;
+            max-width: 380px;
             margin-bottom: 12px;
         }
 
@@ -60,26 +60,37 @@
         .color-pickers {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
+            gap: 10px;
             margin-bottom: 10px;
         }
         .color-item {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 6px;
             background: rgba(0, 0, 0, 0.2);
-            padding: 6px 10px;
+            padding: 8px 10px;
             border-radius: 8px;
             font-size: 0.85rem;
         }
-        
-        .color-item input[type="color"] {
-            width: 36px;
-            height: 36px;
-            border: none;
+
+        /* カスタムパレット（色選択ボタン） */
+        .color-palette {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .color-btn {
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
+            border: 2px solid transparent;
             cursor: pointer;
-            background: none;
+            transition: transform 0.1s ease, border-color 0.1s ease;
+        }
+        .color-btn.selected {
+            border-color: #ffffff;
+            transform: scale(1.15);
+            box-shadow: 0 0 5px rgba(255,255,255,0.8);
         }
 
         select, input[type="range"] {
@@ -220,18 +231,6 @@
 </head>
 <body>
 
-    <!-- 純粋な青を除外したカラーパレット定義 -->
-    <datalist id="safe-colors">
-        <option value="#00FF00">緑</option>
-        <option value="#FFFF00">黄</option>
-        <option value="#87CEFA">スカイブルー</option>
-        <option value="#FF0000">赤</option>
-        <option value="#FF00FF">マゼンタ</option>
-        <option value="#00FFFF">シアン</option>
-        <option value="#FFA500">オレンジ</option>
-        <option value="#FFFFFF">白</option>
-    </datalist>
-
     <!-- 1. 設定・スタート画面 -->
     <div id="setup-screen">
         <h1>カラーアクション設定</h1>
@@ -240,11 +239,22 @@
         <div class="setting-group">
             <div class="setting-title">🎨 マットの色調整（4分割）</div>
             <div class="color-pickers">
-                <div class="color-item"><span>左上</span><input type="color" id="color-tl" value="#00FF00" list="safe-colors"></div>
-                <div class="color-item"><span>右上</span><input type="color" id="color-tr" value="#FFFF00" list="safe-colors"></div>
-                <!-- 初期値をスカイブルー(#87CEFA)に設定 -->
-                <div class="color-item"><span>左下</span><input type="color" id="color-bl" value="#87CEFA" list="safe-colors"></div>
-                <div class="color-item"><span>右下</span><input type="color" id="color-br" value="#FF0000" list="safe-colors"></div>
+                <div class="color-item">
+                    <span>左上</span>
+                    <div class="color-palette" data-cell="tl"></div>
+                </div>
+                <div class="color-item">
+                    <span>右上</span>
+                    <div class="color-palette" data-cell="tr"></div>
+                </div>
+                <div class="color-item">
+                    <span>左下</span>
+                    <div class="color-palette" data-cell="bl"></div>
+                </div>
+                <div class="color-item">
+                    <span>右下</span>
+                    <div class="color-palette" data-cell="br"></div>
+                </div>
             </div>
 
             <!-- マーク選択オプション -->
@@ -307,6 +317,47 @@
     </div>
 
     <script>
+        // 利用可能な安全なカラーリスト（濃い青を除外、スカイブルーを採用）
+        const SAFE_COLORS = [
+            { name: '緑', value: '#00FF00' },
+            { name: '黄', value: '#FFFF00' },
+            { name: 'スカイブルー', value: '#87CEFA' },
+            { name: '赤', value: '#FF0000' },
+            { name: 'マゼンタ', value: '#FF00FF' },
+            { name: 'オレンジ', value: '#FFA500' }
+        ];
+
+        // 各エリアの選択中の色を保持
+        const selectedColors = {
+            tl: '#00FF00',
+            tr: '#FFFF00',
+            bl: '#87CEFA',
+            br: '#FF0000'
+        };
+
+        // パレットUIの初期生成
+        document.querySelectorAll('.color-palette').forEach(palette => {
+            const cellKey = palette.dataset.cell;
+            SAFE_COLORS.forEach(c => {
+                const btn = document.createElement('button');
+                btn.className = 'color-btn';
+                btn.style.backgroundColor = c.value;
+                btn.title = c.name;
+                
+                if (c.value === selectedColors[cellKey]) {
+                    btn.classList.add('selected');
+                }
+
+                btn.addEventListener('click', () => {
+                    palette.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedColors[cellKey] = c.value;
+                });
+
+                palette.appendChild(btn);
+            });
+        });
+
         // Web Audio API（効果音再生）
         let audioCtx = null;
 
@@ -395,39 +446,6 @@
             br: document.getElementById('cell-br')
         };
 
-        const colorInputs = {
-            tl: document.getElementById('color-tl'),
-            tr: document.getElementById('color-tr'),
-            bl: document.getElementById('color-bl'),
-            br: document.getElementById('color-br')
-        };
-
-        // HEXカラーコードから純粋な青・濃い青かどうかを判定・強制スカイブルー化する処理
-        function sanitizeColor(hexStr) {
-            const hex = hexStr.replace('#', '');
-            const r = parseInt(hex.substring(0, 2), 16);
-            const g = parseInt(hex.substring(2, 4), 16);
-            const b = parseInt(hex.substring(4, 6), 16);
-
-            // 青成分が優位で、赤・緑が少ない「濃い青・純粋な青」を判定
-            if (b > 120 && r < 100 && g < 150) {
-                return '#87CEFA'; // スカイブルーへ置き換え
-            }
-            return hexStr;
-        }
-
-        // 入力時・変更時に即座にチェック
-        Object.values(colorInputs).forEach(input => {
-            const handleColorCheck = (e) => {
-                const safeColor = sanitizeColor(e.target.value);
-                if (e.target.value !== safeColor) {
-                    e.target.value = safeColor;
-                }
-            };
-            input.addEventListener('input', handleColorCheck);
-            input.addEventListener('change', handleColorCheck);
-        });
-
         let timerId = null;
         let isPaused = false;
         let intervalTime = 2000;
@@ -481,7 +499,7 @@
                 const activeCount = Math.random() < 0.5 ? 1 : 2;
                 const selectedKeys = shuffle(keys).slice(0, activeCount);
                 selectedKeys.forEach(key => {
-                    cells[key].style.backgroundColor = colorInputs[key].value;
+                    cells[key].style.backgroundColor = selectedColors[key];
                 });
                 playSound('change');
                 return;
@@ -538,7 +556,7 @@
             const shuffledMarks = shuffle(chosenPattern);
 
             selectedKeys.forEach((key, index) => {
-                cells[key].style.backgroundColor = colorInputs[key].value;
+                cells[key].style.backgroundColor = selectedColors[key];
                 const emoji = shuffledMarks[index];
                 if (emoji) {
                     cells[key].innerHTML = `<div class="mark-badge">${emoji}</div>`;
@@ -601,8 +619,4 @@
         });
 
         function togglePause(e) {
-            e.stopPropagation();
-            if (isPaused) {
-                isPaused = false;
-                pauseBtn.textContent = '一時停止';
-                pauseBtn.style.backgroundColor = '#f39c
+            e.sto
