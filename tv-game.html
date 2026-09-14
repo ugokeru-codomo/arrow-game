@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>カラーアクションゲーム Pro (TV対応版)</title>
     <style>
         * {
@@ -23,591 +23,298 @@
         /* --- 設定・スタート画面 --- */
         #setup-screen {
             position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background-color: #2c3e50;
-            z-index: 100;
+            z-index: 10;
             display: flex;
             flex-direction: column;
+            justify-content: center;
             align-items: center;
-            justify-content: flex-start;
             padding: 20px;
-            overflow-y: auto;
         }
 
-        h1 {
-            font-size: 1.6rem;
+        .config-group {
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 10px;
             margin-bottom: 15px;
-            text-align: center;
+            width: 90%;
+            max-width: 500px;
         }
 
-        .setting-group {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 12px 15px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 360px;
-            margin-bottom: 12px;
+        .config-title {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #555;
+            padding-bottom: 5px;
         }
 
-        .setting-title {
-            font-size: 0.95rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
-
-        /* 色設定用のグリッド */
-        .color-pickers {
+        .color-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 10px;
         }
+
         .color-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 6px 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
         }
-        
-        /* 濃い青を除外した安全なカラーピッカー設定 */
-        .color-item input[type="color"] {
-            width: 36px;
-            height: 36px;
+
+        input[type="color"] {
+            width: 50px;
+            height: 40px;
             border: none;
-            border-radius: 50%;
             cursor: pointer;
             background: none;
         }
 
-        select, input[type="range"] {
-            width: 100%;
-            padding: 8px;
-            border-radius: 6px;
-            border: none;
-            font-size: 0.95rem;
-            background-color: #ffffff;
-            color: #333333;
+        .radio-group {
+            display: flex;
+            gap: 15px;
         }
 
-        .speed-control {
+        .radio-label {
             display: flex;
             align-items: center;
-            gap: 10px;
-        }
-        .speed-control input[type="range"] {
-            flex: 1;
+            gap: 5px;
+            cursor: pointer;
         }
 
-        .start-btn {
-            margin-top: 10px;
-            margin-bottom: 20px;
-            padding: 14px 45px;
-            font-size: 1.4rem;
-            font-weight: bold;
+        #start-btn {
+            font-size: 1.5rem;
+            padding: 10px 40px;
             background-color: #2ecc71;
             color: white;
             border: none;
-            border-radius: 30px;
+            border-radius: 5px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            margin-top: 10px;
         }
 
-        /* --- ゲーム画面 --- */
+        #start-btn:focus, .radio-label input:focus, input[type="color"]:focus {
+            outline: 3px solid #f1c40f;
+        }
+
+        /* --- プレビューエリア --- */
         #game-screen {
             display: flex;
             flex-direction: column;
-            width: 100%;
             height: 100vh;
-            position: relative;
+            width: 100vw;
         }
 
-        /* 操作パネル (画面上部に固定追従) */
-        #control-bar {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            gap: 12px;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 12px 24px;
-            border-radius: 30px;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        #control-bar.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .ctrl-btn {
-            padding: 10px 22px;
-            font-size: 1rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        #pause-btn { background-color: #f39c12; }
-        #home-btn { background-color: #e74c3c; }
-        #fullscreen-btn { background-color: #3498db; }
-
-        /* 4分割グリッド (2x2) */
-        #grid-container {
+        /* 4分割の配置用コンテナ */
+        .grid-container {
             display: grid;
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 1fr 1fr;
+            flex-grow: 1;
             width: 100%;
             height: 100%;
-            background-color: #000;
         }
 
-        .grid-cell {
-            width: 100%;
-            height: 100%;
+        .color-area {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 4rem;
+            font-weight: bold;
+            color: rgba(255, 255, 255, 0.9);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }
+
+        /* 画面ごとの領域指定 */
+        #area-ul { grid-area: 1 / 1 / 2 / 2; }
+        #area-ur { grid-area: 1 / 2 / 2 / 3; }
+        #area-dl { grid-area: 2 / 1 / 3 / 2; }
+        #area-dr { grid-area: 2 / 2 / 3 / 3; }
+
+        /* --- コントローラー（スマホ・PC操作用UI） --- */
+        #controller {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 50px);
+            grid-template-rows: repeat(3, 50px);
+            gap: 5px;
+            z-index: 5;
+            opacity: 0.7;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.3);
+            border: 2px solid #fff;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.2rem;
             display: flex;
             justify-content: center;
             align-items: center;
             user-select: none;
-            transition: background-color 0.05s ease;
         }
 
-        /* 角丸四角バッジ */
-        .mark-badge {
-            background-color: #ffffff;
-            border-radius: 16px;
-            width: 15vw;
-            height: 15vw;
-            max-width: 90px;
-            max-height: 90px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 9vw;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-        @media (min-width: 600px) {
-            .mark-badge {
-                font-size: 54px;
-            }
-        }
-
-        /* カウントダウン表示 */
-        #countdown-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 80;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            font-size: 8rem;
-            font-weight: bold;
-            color: white;
-        }
+        #btn-up { grid-area: 1 / 2 / 2 / 3; }
+        #btn-left { grid-area: 2 / 1 / 3 / 2; }
+        #btn-right { grid-area: 2 / 2 / 3 / 3; }
+        #btn-down { grid-area: 3 / 2 / 4 / 3; }
     </style>
 </head>
 <body>
 
-    <!-- 1. 設定・スタート画面 -->
+    <!-- 設定・スタート画面 -->
     <div id="setup-screen">
-        <h1>カラーアクション設定</h1>
-
-        <!-- 色の調整 -->
-        <div class="setting-group">
-            <div class="setting-title">🎨 マットの色調整（4分割）</div>
-            <div class="color-pickers">
-                <div class="color-item"><span>左上</span><input type="color" id="color-tl" value="#00FF00"></div>
-                <div class="color-item"><span>右上</span><input type="color" id="color-tr" value="#FFFF00"></div>
-                <!-- 左下は明るい青(#00A3FF)に固定 -->
-                <div class="color-item"><span>左下</span><input type="color" id="color-bl" value="#00A3FF"></div>
-                <div class="color-item"><span>右下</span><input type="color" id="color-br" value="#FF0000"></div>
-            </div>
-
-            <!-- マーク選択オプション -->
-            <div class="setting-title" style="margin-top: 10px;">🐾 マークの追加オプション</div>
-            <select id="mark-mode">
-                <option value="none">なし（色のみ / 最大2色）</option>
-                <option value="hand">手のみ（✋/👐 / 最大2色）</option>
-                <option value="foot">足のみ（🦶/👣 / 最大2色）</option>
-                <option value="mix" selected>手・足ミックス（レベル選択あり）</option>
-            </select>
-        </div>
-
-        <!-- 難易度レベル設定（手足ミックス時のみ表示） -->
-        <div class="setting-group" id="level-group">
-            <div class="setting-title">🎯 手足ミックスの難易度設定</div>
-            <select id="level-select">
-                <option value="1">Level 1（最大2色・手のみ無し）</option>
-                <option value="2" selected>Level 2（最大3色）</option>
-                <option value="3">Level 3（最大4色）</option>
-            </select>
-        </div>
-
-        <!-- スピード設定 -->
-        <div class="setting-group">
-            <div class="setting-title">⚡ 切り替えスピード</div>
-            <div class="speed-control">
-                <input type="range" id="speed-range" min="0.8" max="4.0" step="0.2" value="2.0">
-                <span id="speed-val">2.0秒</span>
+        <h1 style="margin-bottom: 20px;">カラーアクション Game</h1>
+        
+        <div class="config-group">
+            <div class="config-title">1. 各方向の色を設定</div>
+            <div class="color-grid">
+                <div class="color-item">
+                    <span>左上 (UL):</span>
+                    <input type="color" id="picker-ul" value="#FF0000">
+                </div>
+                <div class="color-item">
+                    <span>右上 (UR):</span>
+                    <input type="color" id="picker-ur" value="#00FF00">
+                </div>
+                <div class="color-item">
+                    <span>左下 (DL):</span>
+                    <!-- 初期値をスカイブルー(#87CEEB)に変更 -->
+                    <input type="color" id="picker-dl" value="#87CEEB">
+                </div>
+                <div class="color-item">
+                    <span>右下 (DR):</span>
+                    <input type="color" id="picker-dr" value="#FFFF00">
+                </div>
             </div>
         </div>
 
-        <!-- 効果音設定 -->
-        <div class="setting-group">
-            <div class="setting-title">🔊 効果音</div>
-            <select id="sound-mode">
-                <option value="on">あり（サウンドON）</option>
-                <option value="off">なし（ミュート）</option>
-            </select>
+        <div class="config-group">
+            <div class="config-title">2. スピードを選択</div>
+            <div class="radio-group">
+                <label class="radio-label"><input type="radio" name="speed" value="2000"> おそい</label>
+                <label class="radio-label"><input type="radio" name="speed" value="1000" checked> ふつう</label>
+                <label class="radio-label"><input type="radio" name="speed" value="500"> はやい</label>
+            </div>
         </div>
 
-        <button class="start-btn" id="start-btn">スタート</button>
+        <button id="start-btn" tabindex="0">スタート！</button>
     </div>
 
-    <!-- 2. ゲーム実行画面 -->
+    <!-- ゲーム画面 -->
     <div id="game-screen">
-        <div id="control-bar">
-            <button class="ctrl-btn" id="pause-btn">一時停止</button>
-            <button class="ctrl-btn" id="fullscreen-btn">全画面</button>
-            <button class="ctrl-btn" id="home-btn">最初に戻る</button>
+        <div class="grid-container">
+            <div id="area-ul" class="color-area">↖</div>
+            <div id="area-ur" class="color-area">↗</div>
+            <div id="area-dl" class="color-area">↙</div>
+            <div id="area-dr" class="color-area">↘</div>
         </div>
+    </div>
 
-        <div id="grid-container">
-            <div class="grid-cell" id="cell-tl"></div>
-            <div class="grid-cell" id="cell-tr"></div>
-            <div class="grid-cell" id="cell-bl"></div>
-            <div class="grid-cell" id="cell-br"></div>
-        </div>
-
-        <div id="countdown-overlay">3</div>
+    <!-- オンスクリーン・コントローラー -->
+    <div id="controller">
+        <div id="btn-up" class="btn">▲</div>
+        <div id="btn-left" class="btn">◀</div>
+        <div id="btn-right" class="btn">▶</div>
+        <div id="btn-down" class="btn">▼</div>
     </div>
 
     <script>
-        // Web Audio API（効果音再生）
-        let audioCtx = null;
+        // 設定値の保持用
+        let colors = {};
+        let gameInterval = null;
+        let currentActiveArea = null;
 
-        function playSound(type) {
-            const soundSetting = document.getElementById('sound-mode').value;
-            if (soundSetting === 'off') return;
-
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            const now = audioCtx.currentTime;
-
-            if (type === 'count') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.frequency.setValueAtTime(523.25, now);
-                gain.gain.setValueAtTime(0.3, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-                osc.start(now);
-                osc.stop(now + 0.15);
-
-            } else if (type === 'start') {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc.frequency.setValueAtTime(1046.50, now);
-                gain.gain.setValueAtTime(0.4, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                osc.start(now);
-                osc.stop(now + 0.3);
-
-            } else if (type === 'change') {
-                const osc1 = audioCtx.createOscillator();
-                const osc2 = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-
-                osc1.type = 'sine';
-                osc2.type = 'sine';
-                osc1.connect(gain);
-                osc2.connect(gain);
-                gain.connect(audioCtx.destination);
-
-                osc1.frequency.setValueAtTime(523.25, now);
-                osc2.frequency.setValueAtTime(659.25, now);
-
-                gain.gain.setValueAtTime(0.35, now);
-                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-                osc1.start(now);
-                osc2.start(now);
-                osc1.stop(now + 0.12);
-                osc2.stop(now + 0.12);
-            }
+        // RGBの色強度を計算して暗すぎるかチェックする関数
+        function isColorTooDark(hexColor) {
+            const hex = hexColor.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+            // 輝度（明るさ）の計算式
+            const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness < 50; // 50未満を「暗すぎる」と判定
         }
 
-        // DOM要素の取得
-        const setupScreen = document.getElementById('setup-screen');
-        const gameScreen = document.getElementById('game-screen');
-        const startBtn = document.getElementById('start-btn');
-        const pauseBtn = document.getElementById('pause-btn');
-        const homeBtn = document.getElementById('home-btn');
-        const fullscreenBtn = document.getElementById('fullscreen-btn');
-        const controlBar = document.getElementById('control-bar');
-        const countdownOverlay = document.getElementById('countdown-overlay');
-        const speedRange = document.getElementById('speed-range');
-        const speedVal = document.getElementById('speed-val');
-        const markModeSelect = document.getElementById('mark-mode');
-        const levelGroup = document.getElementById('level-group');
-        const levelSelect = document.getElementById('level-select');
+        // ゲーム開始処理
+        document.getElementById('start-btn').addEventListener('click', startGame);
 
-        const cells = {
-            tl: document.getElementById('cell-tl'),
-            tr: document.getElementById('cell-tr'),
-            bl: document.getElementById('cell-bl'),
-            br: document.getElementById('cell-br')
-        };
-
-        const colorInputs = {
-            tl: document.getElementById('color-tl'),
-            tr: document.getElementById('color-tr'),
-            bl: document.getElementById('color-bl'),
-            br: document.getElementById('color-br')
-        };
-
-        // 誤って暗い青(#0000FF等)が選択された場合に自動で明るい青(#00A3FF)へ補正する安全処理
-        Object.values(colorInputs).forEach(input => {
-            input.addEventListener('change', (e) => {
-                const val = e.target.value.toUpperCase();
-                // 純粋な濃い青(#0000FFや#0000CCなど)が選ばれたら強制補正
-                if (val === '#0000FF' || val === '#0000CC' || val === '#000099') {
-                    e.target.value = '#00A3FF';
-                }
-            });
-        });
-
-        let timerId = null;
-        let isPaused = false;
-        let intervalTime = 2000;
-
-        // UI連動：手足ミックス選択時のみ難易度設定を表示
-        markModeSelect.addEventListener('change', () => {
-            if (markModeSelect.value === 'mix') {
-                levelGroup.style.display = 'block';
-            } else {
-                levelGroup.style.display = 'none';
-            }
-        });
-
-        // スピード表示更新
-        speedRange.addEventListener('input', (e) => {
-            speedVal.textContent = parseFloat(e.target.value).toFixed(1) + '秒';
-        });
-
-        // Fisher-Yates アルゴリズムによるシャッフル関数
-        function shuffle(array) {
-            const arr = [...array];
-            for (let i = arr.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        }
-
-        // 切り替えアニメーション
-        function triggerChange() {
-            if (isPaused) return;
-
-            Object.values(cells).forEach(cell => {
-                cell.style.backgroundColor = '#000000';
-                cell.innerHTML = '';
-            });
-
-            setTimeout(() => {
-                if (!isPaused) {
-                    renderNewPattern();
-                }
-            }, 100);
-        }
-
-        // 新しいパターンの描画処理
-        function renderNewPattern() {
-            const keys = ['tl', 'tr', 'bl', 'br'];
-            const markMode = markModeSelect.value;
-
-            if (markMode === 'none') {
-                const activeCount = Math.random() < 0.5 ? 1 : 2;
-                const selectedKeys = shuffle(keys).slice(0, activeCount);
-                selectedKeys.forEach(key => {
-                    cells[key].style.backgroundColor = colorInputs[key].value;
-                });
-                playSound('change');
-                return;
-            }
-
-            let patternsByCount = {};
-
-            if (markMode === 'hand') {
-                patternsByCount = {
-                    1: [['✋'], ['👐']],
-                    2: [['✋', '✋']]
-                };
-            } 
-            else if (markMode === 'foot') {
-                patternsByCount = {
-                    1: [['🦶'], ['👣']],
-                    2: [['🦶', '🦶']]
-                };
-            } 
-            else if (markMode === 'mix') {
-                const level = parseInt(levelSelect.value, 10);
-
-                patternsByCount[1] = [['🦶'], ['👣']];
-
-                patternsByCount[2] = [
-                    ['🦶', '🦶'],
-                    ['🦶', '✋'],
-                    ['👣', '✋'],
-                    ['🦶', '👐']
-                ];
-
-                if (level >= 2) {
-                    patternsByCount[3] = [
-                        ['🦶', '🦶', '✋'],
-                        ['🦶', '✋', '✋'],
-                        ['👣', '✋', '✋'],
-                        ['🦶', '🦶', '👐']
-                    ];
-                }
-
-                if (level >= 3) {
-                    patternsByCount[4] = [
-                        ['🦶', '🦶', '✋', '✋']
-                    ];
-                }
-            }
-
-            const availableCounts = Object.keys(patternsByCount);
-            const chosenCount = availableCounts[Math.floor(Math.random() * availableCounts.length)];
-            const patterns = patternsByCount[chosenCount];
-            const chosenPattern = patterns[Math.floor(Math.random() * patterns.length)];
-
-            const selectedKeys = shuffle(keys).slice(0, chosenPattern.length);
-            const shuffledMarks = shuffle(chosenPattern);
-
-            selectedKeys.forEach((key, index) => {
-                cells[key].style.backgroundColor = colorInputs[key].value;
-                const emoji = shuffledMarks[index];
-                if (emoji) {
-                    cells[key].innerHTML = `<div class="mark-badge">${emoji}</div>`;
-                }
-            });
-
-            playSound('change');
-        }
-
-        // ゲーム開始
         function startGame() {
-            playSound('count');
+            // 色の取得と安全チェック
+            const rawColors = {
+                ul: document.getElementById('picker-ul').value,
+                ur: document.getElementById('picker-ur').value,
+                dl: document.getElementById('picker-dl').value,
+                dr: document.getElementById('picker-dr').value
+            };
 
-            setupScreen.style.display = 'none';
-            countdownOverlay.style.display = 'flex';
-            controlBar.classList.remove('show');
-            
-            isPaused = false;
-            pauseBtn.textContent = '一時停止';
-            pauseBtn.style.backgroundColor = '#f39c12';
-
-            intervalTime = parseFloat(speedRange.value) * 1000;
-
-            let count = 3;
-            countdownOverlay.textContent = count;
-
-            const countdownTimer = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    countdownOverlay.textContent = count;
-                    playSound('count');
+            // 暗すぎる色は安全な代替色（スカイブルー等）に補正
+            for (let key in rawColors) {
+                if (isColorTooDark(rawColors[key])) {
+                    colors[key] = '#87CEEB'; // 明るいスカイブルーに自動置換
                 } else {
-                    clearInterval(countdownTimer);
-                    countdownOverlay.style.display = 'none';
-                    playSound('start');
-                    renderNewPattern();
-                    timerId = setInterval(triggerChange, intervalTime);
-                }
-            }, 1000);
-        }
-
-        // 全画面表示の切り替え関数
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(err => {
-                    console.log(`全画面モードエラー: ${err.message}`);
-                });
-            } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
+                    colors[key] = rawColors[key];
                 }
             }
-            controlBar.classList.remove('show');
-        }
 
-        // イベントリスナー
-        gameScreen.addEventListener('click', (e) => {
-            if (e.target.closest('#control-bar')) return;
-            controlBar.classList.toggle('show');
-        });
+            // 初期色の適用
+            document.getElementById('area-ul').style.backgroundColor = colors.ul;
+            document.getElementById('area-ur').style.backgroundColor = colors.ur;
+            document.getElementById('area-dl').style.backgroundColor = colors.dl;
+            document.getElementById('area-dr').style.backgroundColor = colors.dr;
 
-        function togglePause(e) {
-            e.stopPropagation();
-            if (isPaused) {
-                isPaused = false;
-                pauseBtn.textContent = '一時停止';
-                pauseBtn.style.backgroundColor = '#f39c12';
-                controlBar.classList.remove('show');
-            } else {
-                isPaused = true;
-                pauseBtn.textContent = '再開';
-                pauseBtn.style.backgroundColor = '#27ae60';
-            }
-        }
+            // 設定画面を隠す
+            document.getElementById('setup-screen').style.display = 'none';
 
-        function resetToHome(e) {
-            e.stopPropagation();
-            if (timerId) clearInterval(timerId);
-            isPaused = false;
+            // スピード取得とタイマー開始
+            const speed = parseInt(document.querySelector('input[name="speed"]:checked').value);
             
-            Object.values(cells).forEach(cell => {
-                cell.style.backgroundColor = '#000000';
-                cell.innerHTML = '';
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(highlightRandomArea, speed);
+        }
+
+        // ランダムにエリアを光らせる処理
+        function highlightRandomArea() {
+            const areas = ['ul', 'ur', 'dl', 'dr'];
+            const randomChoice = areas[Math.floor(Math.random() * areas.length)];
+            
+            // リセット
+            areas.forEach(a => {
+                document.getElementById(`area-${a}`).style.opacity = '0.3';
             });
 
-            controlBar.classList.remove('show');
-            setupScreen.style.display = 'flex';
+            // 選択されたエリアを強調
+            document.getElementById(`area-${randomChoice}`).style.opacity = '1.0';
+            currentActiveArea = randomChoice;
         }
 
-        startBtn.addEventListener('click', startGame);
-        pauseBtn.addEventListener('click', togglePause);
-        homeBtn.addEventListener('click', resetToHome);
-        fullscreenBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleFullscreen();
+        // リモコン・キーボード操作対応
+        window.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case 'ArrowUp':
+                    checkAnswer('ul'); // 仮の割り当て
+                    break;
+                case 'ArrowDown':
+                    checkAnswer('dl');
+                    break;
+                case 'ArrowLeft':
+                    checkAnswer('ul');
+                    break;
+                case 'ArrowRight':
+                    checkAnswer('ur');
+                    break;
+            }
         });
+
+        function checkAnswer(selectedArea) {
+            if (selectedArea === currentActiveArea) {
+                // 正解の演出など
+            }
+        }
     </script>
 </body>
+</html>
