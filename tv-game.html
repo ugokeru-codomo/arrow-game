@@ -5,260 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>カラーアクションゲーム Pro (TV対応版)</title>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body {
-            font-family: sans-serif;
-            background-color: #1a1a1a;
-            color: #ffffff;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background-color: #1a1a1a; color: #ffffff; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
 
-        /* --- 設定・スタート画面 --- */
-        #setup-screen {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-color: #2c3e50;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
-            padding: 20px;
-            overflow-y: auto;
-        }
+        #setup-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: #2c3e50; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 20px; overflow-y: auto; }
+        h1 { font-size: 1.6rem; margin-bottom: 15px; text-align: center; }
 
-        h1 {
-            font-size: 1.6rem;
-            margin-bottom: 15px;
-            text-align: center;
-        }
+        .setting-group { background: rgba(255, 255, 255, 0.1); padding: 12px 15px; border-radius: 12px; width: 100%; max-width: 380px; margin-bottom: 12px; }
+        .setting-title { font-size: 0.95rem; font-weight: bold; margin-bottom: 8px; }
 
-        .setting-group {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 12px 15px;
-            border-radius: 12px;
-            width: 100%;
-            max-width: 380px;
-            margin-bottom: 12px;
-        }
+        .color-pickers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .color-item { display: flex; flex-direction: column; gap: 6px; background: rgba(0, 0, 0, 0.2); padding: 8px 10px; border-radius: 8px; font-size: 0.85rem; }
 
-        .setting-title {
-            font-size: 0.95rem;
-            font-weight: bold;
-            margin-bottom: 8px;
-        }
+        .color-palette { display: flex; gap: 6px; flex-wrap: wrap; min-height: 28px; }
+        .color-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; transition: transform 0.1s ease, border-color 0.1s ease; }
+        .color-btn.selected { border-color: #ffffff; transform: scale(1.15); box-shadow: 0 0 5px rgba(255,255,255,0.8); }
 
-        /* 色設定用のグリッド */
-        .color-pickers {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-        .color-item {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 8px 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-        }
+        select, input[type="range"] { width: 100%; padding: 8px; border-radius: 6px; border: none; font-size: 0.95rem; background-color: #ffffff; color: #333333; }
+        .speed-control { display: flex; align-items: center; gap: 10px; }
+        .speed-control input[type="range"] { flex: 1; }
 
-        /* カスタムパレット（色選択ボタン） */
-        .color-palette {
-            display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
-            min-height: 28px; /* 表示崩れ防止 */
-        }
-        .color-btn {
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            border: 2px solid transparent;
-            cursor: pointer;
-            transition: transform 0.1s ease, border-color 0.1s ease;
-        }
-        .color-btn.selected {
-            border-color: #ffffff;
-            transform: scale(1.15);
-            box-shadow: 0 0 5px rgba(255,255,255,0.8);
-        }
+        .start-btn { margin-top: 10px; margin-bottom: 20px; padding: 14px 45px; font-size: 1.4rem; font-weight: bold; background-color: #2ecc71; color: white; border: none; border-radius: 30px; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
 
-        select, input[type="range"] {
-            width: 100%;
-            padding: 8px;
-            border-radius: 6px;
-            border: none;
-            font-size: 0.95rem;
-            background-color: #ffffff;
-            color: #333333;
-        }
+        #game-screen { display: flex; flex-direction: column; width: 100%; height: 100vh; position: relative; }
+        #control-bar { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 9999; display: flex; gap: 12px; background: rgba(0, 0, 0, 0.85); padding: 12px 24px; border-radius: 30px; backdrop-filter: blur(8px); box-shadow: 0 4px 15px rgba(0,0,0,0.5); opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        #control-bar.show { opacity: 1; pointer-events: auto; }
 
-        .speed-control {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .speed-control input[type="range"] {
-            flex: 1;
-        }
-
-        .start-btn {
-            margin-top: 10px;
-            margin-bottom: 20px;
-            padding: 14px 45px;
-            font-size: 1.4rem;
-            font-weight: bold;
-            background-color: #2ecc71;
-            color: white;
-            border: none;
-            border-radius: 30px;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-
-        /* --- ゲーム画面 --- */
-        #game-screen {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-            height: 100vh;
-            position: relative;
-        }
-
-        /* 操作パネル */
-        #control-bar {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 9999;
-            display: flex;
-            gap: 12px;
-            background: rgba(0, 0, 0, 0.85);
-            padding: 12px 24px;
-            border-radius: 30px;
-            backdrop-filter: blur(8px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-            
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s ease;
-        }
-
-        #control-bar.show {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .ctrl-btn {
-            padding: 10px 22px;
-            font-size: 1rem;
-            font-weight: bold;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            color: white;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
+        .ctrl-btn { padding: 10px 22px; font-size: 1rem; font-weight: bold; border: none; border-radius: 20px; cursor: pointer; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
         #pause-btn { background-color: #f39c12; }
         #home-btn { background-color: #e74c3c; }
         #fullscreen-btn { background-color: #3498db; }
 
-        /* 4分割グリッド (2x2) */
-        #grid-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            grid-template-rows: 1fr 1fr;
-            width: 100%;
-            height: 100%;
-            background-color: #000;
-        }
+        #grid-container { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; width: 100%; height: 100%; background-color: #000; }
+        .grid-cell { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; user-select: none; transition: background-color 0.05s ease; }
 
-        .grid-cell {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            user-select: none;
-            transition: background-color 0.05s ease;
-        }
+        .mark-badge { background-color: #ffffff; border-radius: 16px; width: 15vw; height: 15vw; max-width: 90px; max-height: 90px; display: flex; justify-content: center; align-items: center; font-size: 9vw; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); }
+        @media (min-width: 600px) { .mark-badge { font-size: 54px; } }
 
-        /* 角丸四角バッジ */
-        .mark-badge {
-            background-color: #ffffff;
-            border-radius: 16px;
-            width: 15vw;
-            height: 15vw;
-            max-width: 90px;
-            max-height: 90px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 9vw;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-        }
-        @media (min-width: 600px) {
-            .mark-badge {
-                font-size: 54px;
-            }
-        }
-
-        /* カウントダウン表示 */
-        #countdown-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            z-index: 80;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            font-size: 8rem;
-            font-weight: bold;
-            color: white;
-        }
+        #countdown-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); z-index: 80; display: none; justify-content: center; align-items: center; font-size: 8rem; font-weight: bold; color: white; }
     </style>
 </head>
 <body>
 
-    <!-- 1. 設定・スタート画面 -->
     <div id="setup-screen">
         <h1>カラーアクション設定</h1>
 
-        <!-- 色の調整 -->
         <div class="setting-group">
             <div class="setting-title">🎨 マットの色調整（4分割）</div>
             <div class="color-pickers">
-                <div class="color-item">
-                    <span>左上</span>
-                    <div class="color-palette" data-cell="tl"></div>
-                </div>
-                <div class="color-item">
-                    <span>右上</span>
-                    <div class="color-palette" data-cell="tr"></div>
-                </div>
-                <div class="color-item">
-                    <span>左下</span>
-                    <div class="color-palette" data-cell="bl"></div>
-                </div>
-                <div class="color-item">
-                    <span>右下</span>
-                    <div class="color-palette" data-cell="br"></div>
-                </div>
+                <div class="color-item"><span>左上</span><div class="color-palette" data-cell="tl"></div></div>
+                <div class="color-item"><span>右上</span><div class="color-palette" data-cell="tr"></div></div>
+                <div class="color-item"><span>左下</span><div class="color-palette" data-cell="bl"></div></div>
+                <div class="color-item"><span>右下</span><div class="color-palette" data-cell="br"></div></div>
             </div>
 
-            <!-- マーク選択オプション -->
             <div class="setting-title" style="margin-top: 10px;">🐾 マークの追加オプション</div>
             <select id="mark-mode">
                 <option value="none">なし（色のみ / 最大2色）</option>
@@ -268,7 +68,6 @@
             </select>
         </div>
 
-        <!-- 難易度レベル設定（手足ミックス時のみ表示） -->
         <div class="setting-group" id="level-group">
             <div class="setting-title">🎯 手足ミックスの難易度設定</div>
             <select id="level-select">
@@ -278,7 +77,6 @@
             </select>
         </div>
 
-        <!-- スピード設定 -->
         <div class="setting-group">
             <div class="setting-title">⚡ 切り替えスピード</div>
             <div class="speed-control">
@@ -287,7 +85,6 @@
             </div>
         </div>
 
-        <!-- 効果音設定 -->
         <div class="setting-group">
             <div class="setting-title">🔊 効果音</div>
             <select id="sound-mode">
@@ -299,7 +96,6 @@
         <button class="start-btn" id="start-btn">スタート</button>
     </div>
 
-    <!-- 2. ゲーム実行画面 -->
     <div id="game-screen">
         <div id="control-bar">
             <button class="ctrl-btn" id="pause-btn">一時停止</button>
@@ -318,119 +114,81 @@
     </div>
 
     <script>
-        // DOMの読み込み完了後に全処理を実行する（エラー防止）
-        document.addEventListener('DOMContentLoaded', () => {
+        const SAFE_COLORS = [
+            { name: '緑', value: '#00FF00' },
+            { name: '黄', value: '#FFFF00' },
+            { name: 'スカイブルー', value: '#87CEFA' },
+            { name: '赤', value: '#FF0000' },
+            { name: 'マゼンタ', value: '#FF00FF' },
+            { name: 'オレンジ', value: '#FFA500' }
+        ];
 
-            // 利用可能な安全なカラーリスト
-            const SAFE_COLORS = [
-                { name: '緑', value: '#00FF00' },
-                { name: '黄', value: '#FFFF00' },
-                { name: 'スカイブルー', value: '#87CEFA' },
-                { name: '赤', value: '#FF0000' },
-                { name: 'マゼンタ', value: '#FF00FF' },
-                { name: 'オレンジ', value: '#FFA500' }
-            ];
+        const selectedColors = {
+            tl: '#00FF00',
+            tr: '#FFFF00',
+            bl: '#87CEFA',
+            br: '#FF0000'
+        };
 
-            // 各エリアの選択中の色を保持
-            const selectedColors = {
-                tl: '#00FF00',
-                tr: '#FFFF00',
-                bl: '#87CEFA',
-                br: '#FF0000'
-            };
-
-            // パレットUIの初期生成
+        function buildPalettes() {
             document.querySelectorAll('.color-palette').forEach(palette => {
                 const cellKey = palette.dataset.cell;
+                palette.innerHTML = '';
                 SAFE_COLORS.forEach(c => {
                     const btn = document.createElement('button');
                     btn.type = 'button';
-                    btn.className = 'color-btn';
+                    btn.className = 'color-btn' + (c.value === selectedColors[cellKey] ? ' selected' : '');
                     btn.style.backgroundColor = c.value;
                     btn.title = c.name;
-                    
-                    if (c.value === selectedColors[cellKey]) {
-                        btn.classList.add('selected');
-                    }
-
                     btn.addEventListener('click', (e) => {
                         e.preventDefault();
                         palette.querySelectorAll('.color-btn').forEach(b => b.classList.remove('selected'));
                         btn.classList.add('selected');
                         selectedColors[cellKey] = c.value;
                     });
-
                     palette.appendChild(btn);
                 });
             });
+        }
 
-            // Web Audio API（効果音再生）
+        // DOM構築時に確実に実行
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
+
+        function initApp() {
+            buildPalettes();
+
             let audioCtx = null;
-
             function playSound(type) {
-                const soundSetting = document.getElementById('sound-mode').value;
-                if (soundSetting === 'off') return;
-
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                if (audioCtx.state === 'suspended') {
-                    audioCtx.resume();
-                }
-
+                if (document.getElementById('sound-mode').value === 'off') return;
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioCtx.state === 'suspended') audioCtx.resume();
                 const now = audioCtx.currentTime;
 
-                if (type === 'count') {
+                if (type === 'count' || type === 'start') {
                     const osc = audioCtx.createOscillator();
                     const gain = audioCtx.createGain();
                     osc.type = 'triangle';
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
-
-                    osc.frequency.setValueAtTime(523.25, now);
-                    gain.gain.setValueAtTime(0.3, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+                    osc.frequency.setValueAtTime(type === 'count' ? 523.25 : 1046.50, now);
+                    gain.gain.setValueAtTime(type === 'count' ? 0.3 : 0.4, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + (type === 'count' ? 0.15 : 0.3));
                     osc.start(now);
-                    osc.stop(now + 0.15);
-
-                } else if (type === 'start') {
-                    const osc = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-                    osc.type = 'triangle';
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-
-                    osc.frequency.setValueAtTime(1046.50, now);
-                    gain.gain.setValueAtTime(0.4, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-                    osc.start(now);
-                    osc.stop(now + 0.3);
-
+                    osc.stop(now + (type === 'count' ? 0.15 : 0.3));
                 } else if (type === 'change') {
-                    const osc1 = audioCtx.createOscillator();
-                    const osc2 = audioCtx.createOscillator();
-                    const gain = audioCtx.createGain();
-
-                    osc1.type = 'sine';
-                    osc2.type = 'sine';
-                    osc1.connect(gain);
-                    osc2.connect(gain);
-                    gain.connect(audioCtx.destination);
-
-                    osc1.frequency.setValueAtTime(523.25, now);
-                    osc2.frequency.setValueAtTime(659.25, now);
-
-                    gain.gain.setValueAtTime(0.35, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
-
-                    osc1.start(now);
-                    osc2.start(now);
-                    osc1.stop(now + 0.12);
-                    osc2.stop(now + 0.12);
+                    const osc1 = audioCtx.createOscillator(), osc2 = audioCtx.createOscillator(), gain = audioCtx.createGain();
+                    osc1.type = osc2.type = 'sine';
+                    osc1.connect(gain); osc2.connect(gain); gain.connect(audioCtx.destination);
+                    osc1.frequency.setValueAtTime(523.25, now); osc2.frequency.setValueAtTime(659.25, now);
+                    gain.gain.setValueAtTime(0.35, now); gain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                    osc1.start(now); osc2.start(now); osc1.stop(now + 0.12); osc2.stop(now + 0.12);
                 }
             }
 
-            // DOM要素の取得
             const setupScreen = document.getElementById('setup-screen');
             const gameScreen = document.getElementById('game-screen');
             const startBtn = document.getElementById('start-btn');
@@ -456,21 +214,14 @@
             let isPaused = false;
             let intervalTime = 2000;
 
-            // UI連動：手足ミックス選択時のみ難易度設定を表示
             markModeSelect.addEventListener('change', () => {
-                if (markModeSelect.value === 'mix') {
-                    levelGroup.style.display = 'block';
-                } else {
-                    levelGroup.style.display = 'none';
-                }
+                levelGroup.style.display = markModeSelect.value === 'mix' ? 'block' : 'none';
             });
 
-            // スピード表示更新
             speedRange.addEventListener('input', (e) => {
                 speedVal.textContent = parseFloat(e.target.value).toFixed(1) + '秒';
             });
 
-            // Fisher-Yates アルゴリズムによるシャッフル関数
             function shuffle(array) {
                 const arr = [...array];
                 for (let i = arr.length - 1; i > 0; i--) {
@@ -480,77 +231,34 @@
                 return arr;
             }
 
-            // 切り替えアニメーション
             function triggerChange() {
                 if (isPaused) return;
-
-                Object.values(cells).forEach(cell => {
-                    cell.style.backgroundColor = '#000000';
-                    cell.innerHTML = '';
-                });
-
-                setTimeout(() => {
-                    if (!isPaused) {
-                        renderNewPattern();
-                    }
-                }, 100);
+                Object.values(cells).forEach(cell => { cell.style.backgroundColor = '#000000'; cell.innerHTML = ''; });
+                setTimeout(() => { if (!isPaused) renderNewPattern(); }, 100);
             }
 
-            // 新しいパターンの描画処理
             function renderNewPattern() {
                 const keys = ['tl', 'tr', 'bl', 'br'];
                 const markMode = markModeSelect.value;
 
                 if (markMode === 'none') {
-                    const activeCount = Math.random() < 0.5 ? 1 : 2;
-                    const selectedKeys = shuffle(keys).slice(0, activeCount);
-                    selectedKeys.forEach(key => {
-                        cells[key].style.backgroundColor = selectedColors[key];
-                    });
+                    const selectedKeys = shuffle(keys).slice(0, Math.random() < 0.5 ? 1 : 2);
+                    selectedKeys.forEach(key => { cells[key].style.backgroundColor = selectedColors[key]; });
                     playSound('change');
                     return;
                 }
 
                 let patternsByCount = {};
-
                 if (markMode === 'hand') {
-                    patternsByCount = {
-                        1: [['✋'], ['👐']],
-                        2: [['✋', '✋']]
-                    };
-                } 
-                else if (markMode === 'foot') {
-                    patternsByCount = {
-                        1: [['🦶'], ['👣']],
-                        2: [['🦶', '🦶']]
-                    };
-                } 
-                else if (markMode === 'mix') {
+                    patternsByCount = { 1: [['✋'], ['👐']], 2: [['✋', '✋']] };
+                } else if (markMode === 'foot') {
+                    patternsByCount = { 1: [['🦶'], ['👣']], 2: [['🦶', '🦶']] };
+                } else if (markMode === 'mix') {
                     const level = parseInt(levelSelect.value, 10);
-
                     patternsByCount[1] = [['🦶'], ['👣']];
-
-                    patternsByCount[2] = [
-                        ['🦶', '🦶'],
-                        ['🦶', '✋'],
-                        ['👣', '✋'],
-                        ['🦶', '👐']
-                    ];
-
-                    if (level >= 2) {
-                        patternsByCount[3] = [
-                            ['🦶', '🦶', '✋'],
-                            ['🦶', '✋', '✋'],
-                            ['👣', '✋', '✋'],
-                            ['🦶', '🦶', '👐']
-                        ];
-                    }
-
-                    if (level >= 3) {
-                        patternsByCount[4] = [
-                            ['🦶', '🦶', '✋', '✋']
-                        ];
-                    }
+                    patternsByCount[2] = [['🦶', '🦶'], ['🦶', '✋'], ['👣', '✋'], ['🦶', '👐']];
+                    if (level >= 2) patternsByCount[3] = [['🦶', '🦶', '✋'], ['🦶', '✋', '✋'], ['👣', '✋', '✋'], ['🦶', '🦶', '👐']];
+                    if (level >= 3) patternsByCount[4] = [['🦶', '🦶', '✋', '✋']];
                 }
 
                 const availableCounts = Object.keys(patternsByCount);
@@ -563,23 +271,20 @@
 
                 selectedKeys.forEach((key, index) => {
                     cells[key].style.backgroundColor = selectedColors[key];
-                    const emoji = shuffledMarks[index];
-                    if (emoji) {
-                        cells[key].innerHTML = `<div class="mark-badge">${emoji}</div>`;
+                    if (shuffledMarks[index]) {
+                        cells[key].innerHTML = `<div class="mark-badge">${shuffledMarks[index]}</div>`;
                     }
                 });
 
                 playSound('change');
             }
 
-            // ゲーム開始
-            function startGame() {
+            startBtn.addEventListener('click', () => {
                 playSound('count');
-
                 setupScreen.style.display = 'none';
                 countdownOverlay.style.display = 'flex';
                 controlBar.classList.remove('show');
-                
+
                 isPaused = false;
                 pauseBtn.textContent = '一時停止';
                 pauseBtn.style.backgroundColor = '#f39c12';
@@ -592,4 +297,52 @@
                 const countdownTimer = setInterval(() => {
                     count--;
                     if (count > 0) {
-                        countdownOverlay.textContent
+                        countdownOverlay.textContent = count;
+                        playSound('count');
+                    } else {
+                        clearInterval(countdownTimer);
+                        countdownOverlay.style.display = 'none';
+                        playSound('start');
+                        renderNewPattern();
+                        if (timerId) clearInterval(timerId);
+                        timerId = setInterval(triggerChange, intervalTime);
+                    }
+                }, 1000);
+            });
+
+            gameScreen.addEventListener('click', (e) => {
+                if (!e.target.closest('#control-bar')) {
+                    controlBar.classList.toggle('show');
+                }
+            });
+
+            pauseBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                isPaused = !isPaused;
+                pauseBtn.textContent = isPaused ? '再開' : '一時停止';
+                pauseBtn.style.backgroundColor = isPaused ? '#27ae60' : '#f39c12';
+                if (!isPaused) controlBar.classList.remove('show');
+            });
+
+            homeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (timerId) clearInterval(timerId);
+                isPaused = false;
+                Object.values(cells).forEach(c => { c.style.backgroundColor = '#000000'; c.innerHTML = ''; });
+                controlBar.classList.remove('show');
+                setupScreen.style.display = 'flex';
+            });
+
+            fullscreenBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                } else if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+                controlBar.classList.remove('show');
+            });
+        }
+    </script>
+</body>
+</html>
