@@ -220,6 +220,18 @@
 </head>
 <body>
 
+    <!-- 純粋な青を除外したカラーパレット定義 -->
+    <datalist id="safe-colors">
+        <option value="#00FF00">緑</option>
+        <option value="#FFFF00">黄</option>
+        <option value="#87CEFA">スカイブルー</option>
+        <option value="#FF0000">赤</option>
+        <option value="#FF00FF">マゼンタ</option>
+        <option value="#00FFFF">シアン</option>
+        <option value="#FFA500">オレンジ</option>
+        <option value="#FFFFFF">白</option>
+    </datalist>
+
     <!-- 1. 設定・スタート画面 -->
     <div id="setup-screen">
         <h1>カラーアクション設定</h1>
@@ -228,11 +240,11 @@
         <div class="setting-group">
             <div class="setting-title">🎨 マットの色調整（4分割）</div>
             <div class="color-pickers">
-                <div class="color-item"><span>左上</span><input type="color" id="color-tl" value="#00FF00"></div>
-                <div class="color-item"><span>右上</span><input type="color" id="color-tr" value="#FFFF00"></div>
-                <!-- 左下をスカイブルー(#87CEFA)に設定 -->
-                <div class="color-item"><span>左下</span><input type="color" id="color-bl" value="#87CEFA"></div>
-                <div class="color-item"><span>右下</span><input type="color" id="color-br" value="#FF0000"></div>
+                <div class="color-item"><span>左上</span><input type="color" id="color-tl" value="#00FF00" list="safe-colors"></div>
+                <div class="color-item"><span>右上</span><input type="color" id="color-tr" value="#FFFF00" list="safe-colors"></div>
+                <!-- 初期値をスカイブルー(#87CEFA)に設定 -->
+                <div class="color-item"><span>左下</span><input type="color" id="color-bl" value="#87CEFA" list="safe-colors"></div>
+                <div class="color-item"><span>右下</span><input type="color" id="color-br" value="#FF0000" list="safe-colors"></div>
             </div>
 
             <!-- マーク選択オプション -->
@@ -390,14 +402,30 @@
             br: document.getElementById('color-br')
         };
 
-        // 誤って濃い青(#0000FF等)が選択された場合に自動でスカイブルー(#87CEFA)へ補正する安全処理
+        // HEXカラーコードから純粋な青・濃い青かどうかを判定・強制スカイブルー化する処理
+        function sanitizeColor(hexStr) {
+            const hex = hexStr.replace('#', '');
+            const r = parseInt(hex.substring(0, 2), 16);
+            const g = parseInt(hex.substring(2, 4), 16);
+            const b = parseInt(hex.substring(4, 6), 16);
+
+            // 青成分が優位で、赤・緑が少ない「濃い青・純粋な青」を判定
+            if (b > 120 && r < 100 && g < 150) {
+                return '#87CEFA'; // スカイブルーへ置き換え
+            }
+            return hexStr;
+        }
+
+        // 入力時・変更時に即座にチェック
         Object.values(colorInputs).forEach(input => {
-            input.addEventListener('change', (e) => {
-                const val = e.target.value.toUpperCase();
-                if (val === '#0000FF' || val === '#0000CC' || val === '#000099') {
-                    e.target.value = '#87CEFA';
+            const handleColorCheck = (e) => {
+                const safeColor = sanitizeColor(e.target.value);
+                if (e.target.value !== safeColor) {
+                    e.target.value = safeColor;
                 }
-            });
+            };
+            input.addEventListener('input', handleColorCheck);
+            input.addEventListener('change', handleColorCheck);
         });
 
         let timerId = null;
@@ -577,36 +605,4 @@
             if (isPaused) {
                 isPaused = false;
                 pauseBtn.textContent = '一時停止';
-                pauseBtn.style.backgroundColor = '#f39c12';
-                controlBar.classList.remove('show');
-            } else {
-                isPaused = true;
-                pauseBtn.textContent = '再開';
-                pauseBtn.style.backgroundColor = '#27ae60';
-            }
-        }
-
-        function resetToHome(e) {
-            e.stopPropagation();
-            if (timerId) clearInterval(timerId);
-            isPaused = false;
-            
-            Object.values(cells).forEach(cell => {
-                cell.style.backgroundColor = '#000000';
-                cell.innerHTML = '';
-            });
-
-            controlBar.classList.remove('show');
-            setupScreen.style.display = 'flex';
-        }
-
-        startBtn.addEventListener('click', startGame);
-        pauseBtn.addEventListener('click', togglePause);
-        homeBtn.addEventListener('click', resetToHome);
-        fullscreenBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            toggleFullscreen();
-        });
-    </script>
-</body>
-</html>
+                pauseBtn.style.backgroundColor = '#f39c
